@@ -1,0 +1,9 @@
+.env
+.helpers
+node_modules
+public/**
+!public/*
+.DS_Store
+uploads/*
+tests
+typings

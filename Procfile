@@ -1,0 +1,1 @@
+web: forever -c "node --expose-gc" index.js
