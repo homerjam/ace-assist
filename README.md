@@ -219,3 +219,16 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 
 	# Remove untagged images
 	$ docker rmi -f $(docker images | grep "<none>" | awk "{print \$3}")
+
+### Backup Script
+
+    #!/bin/bash
+
+    # Add key to remote host to use ssh without a password
+    # $ ssh-keygen
+    # brew install ssh-copy-id
+    # $ ssh-copy-id -i ~/.ssh/id_rsa.pub user@remotehost
+
+    #rsync -rztche ssh root@remotehost:/shared /Volumes/HD/backup
+
+    rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose root@remotehost:/shared /Volumes/HD/backup
