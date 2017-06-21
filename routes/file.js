@@ -5,9 +5,9 @@ const multiparty = require('connect-multiparty')();
 const uuid = require('node-uuid');
 const Glob = require('glob').Glob;
 const rimrafAsync = Promise.promisify(require('rimraf'));
-const Logger = require('./logger');
-const Image = require('./image');
-const Flow = require('./flow');
+const Logger = require('../lib/logger');
+const Image = require('../lib/image');
+const Flow = require('../lib/flow');
 
 module.exports = function (app, isAuthorised) {
   const uploadDir = app.get('uploadDir');
@@ -17,12 +17,12 @@ module.exports = function (app, isAuthorised) {
   const log = new Logger();
   const image = new Image(profilesDir);
 
-  app.options('/upload?*', (req, res) => {
+  app.options('/file/upload?*', (req, res) => {
     res.status(200);
     res.send();
   });
 
-  app.get('/upload?*', isAuthorised, (req, res) => {
+  app.get('/file/upload?*', isAuthorised, (req, res) => {
     const flow = new Flow(uploadDir);
 
     flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
@@ -35,7 +35,7 @@ module.exports = function (app, isAuthorised) {
       });
   });
 
-  app.post('/upload?*', isAuthorised, multiparty, (req, res) => {
+  app.post('/file/upload?*', isAuthorised, multiparty, (req, res) => {
     const logInfo = log.info.bind(null, null, 'upload');
     const logError = log.error.bind(null, res, 'upload');
 
@@ -98,7 +98,12 @@ module.exports = function (app, isAuthorised) {
       }, logError);
   });
 
-  app.delete('/delete', isAuthorised, (req, res) => {
+  app.get('/file/download/:slug/:fileName/:originalFileName', (req, res) => {
+    const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
+    res.download(filePath, req.params.originalFileName);
+  });
+
+  app.delete('/files/delete', isAuthorised, (req, res) => {
     const files = req.body.files;
     const slug = req.body.slug;
 
@@ -127,10 +132,5 @@ module.exports = function (app, isAuthorised) {
       .then(() => {
         res.status(200).send('OK');
       }, logError);
-  });
-
-  app.get('/download/:slug/:fileName/:originalFileName', (req, res) => {
-    const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
-    res.download(filePath, req.params.originalFileName);
   });
 };

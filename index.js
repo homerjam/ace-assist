@@ -101,11 +101,11 @@ const isAuthorised = (req, res, next) => {
   })(req, res, next);
 };
 
-require('./src/manage')(app, isAuthorised);
-require('./src/log')(app);
-require('./src/transform')(app);
-require('./src/pdf')(app);
-require('./src/info')(app);
+require('./routes/file')(app, isAuthorised);
+require('./routes/log')(app);
+require('./routes/transform')(app);
+require('./routes/pdf')(app);
+require('./routes/utils')(app);
 
 app.use(express.static(app.get('publicDir')));
 

@@ -5,7 +5,7 @@ const request = require('request');
 const mime = require('mime');
 // const cv = require('opencv');
 // const usage = require('usage');
-const Logger = require('./logger');
+const Logger = require('../lib/logger');
 
 const mimeTypes = {
   jpg: 'image/jpeg',

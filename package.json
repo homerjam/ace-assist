@@ -1,6 +1,6 @@
 {
   "name": "ace-assist",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "title": "ACE Assist",
   "description": "An image store with resizing and PDF generation",
   "author": {
@@ -12,7 +12,7 @@
   "repository": "https://github.com/studiothomas/ace-assist.git",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --expose-gc index.js --watch src"
+    "start": "nodemon --expose-gc index.js --watch routes --watch lib"
   },
   "dependencies": {
     "batch": "^0.6.1",
@@ -25,6 +25,7 @@
     "connect-multiparty": "^2.0.0",
     "console-stamp": "^0.2.3",
     "dateformat": "^2.0.0",
+    "diskusage": "^0.2.2",
     "du": "^0.1.0",
     "errorhandler": "^1.5.0",
     "express": "^4.15.3",
@@ -45,6 +46,7 @@
     "passport-http": "^0.3.0",
     "password-hash": "^1.2.2",
     "pdfkit": "github:homerjam/pdfkit#font-fix-2-dist",
+    "pretty-bytes": "^4.0.2",
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
     "rimraf": "^2.6.1",

@@ -3,7 +3,7 @@ const request = require('request-promise');
 const Promise = require('bluebird');
 const PDFDocument = require('pdfkit');
 const sharp = require('sharp');
-const Logger = require('./logger');
+const Logger = require('../lib/logger');
 
 const log = new Logger();
 

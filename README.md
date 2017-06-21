@@ -7,7 +7,7 @@ Resized images aren't persisted so it's advisable to use a CDN in front of the a
 The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations. Various endpoints are provided, see below.
 
 &nbsp;
-### /upload `[POST]`
+### /file/upload `[POST]`
 
 [Flow.js](https://github.com/flowjs/flow.js) compatible upload target.
 
@@ -23,7 +23,7 @@ The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) lib
 | `dzi` | Deep Zoom image options |
 
 &nbsp;
-### /delete `[DELETE]`
+### /files/delete `[DELETE]`
 
 | Parameter | Description |
 | --- | --- |
