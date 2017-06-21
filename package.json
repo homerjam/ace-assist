@@ -15,6 +15,7 @@
     "start": "nodemon --expose-gc index.js --watch routes --watch lib"
   },
   "dependencies": {
+    "attention": "^0.1.1",
     "batch": "^0.6.1",
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.2",
