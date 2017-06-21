@@ -1,8 +1,7 @@
-// const PDFDocument = require('pdfkit')
-const PDFDocument = require('pdfkit/index');
 const _ = require('lodash');
 const request = require('request-promise');
 const Promise = require('bluebird');
+const PDFDocument = require('pdfkit');
 const sharp = require('sharp');
 const Logger = require('./logger');
 
@@ -74,7 +73,7 @@ const downloadAssets = assets => new Promise((resolve, reject) => {
     .catch(reject);
 });
 
-const addItem = (doc, publicDir, assets, item, pi) => new Promise((resolve, reject) => {
+const addItem = (doc, publicDir, assets, fonts, item, pi) => new Promise((resolve, reject) => {
   const cmd = Object.keys(item)[0];
   let args = item[cmd];
 
@@ -88,36 +87,39 @@ const addItem = (doc, publicDir, assets, item, pi) => new Promise((resolve, reje
       doc[cmd](...args);
 
       resolve();
-    } else {
-      const imagePath = [publicDir, args[0]].join('/');
-
-      const image = sharp(imagePath);
-      image.max();
-      image.resize(1500, 1000);
-      image.jpeg({
-        quality: 80,
-      });
-      image.withMetadata();
-      image.toBuffer()
-        .then((buffer) => {
-          args[0] = buffer;
-
-          doc.switchToPage(pi);
-          doc[cmd](...args);
-
-          resolve();
-        }, reject);
+      return;
     }
-  } else {
-    doc.switchToPage(pi);
-    doc[cmd](...args);
 
-    resolve();
+    const imagePath = [publicDir, args[0]].join('/');
+
+    const image = sharp(imagePath);
+    image.max();
+    image.resize(1500, 1000);
+    image.jpeg({
+      quality: 80,
+    });
+    image.withMetadata();
+    image.toBuffer()
+      .then((buffer) => {
+        args[0] = buffer;
+
+        doc.switchToPage(pi);
+        doc[cmd](...args);
+
+        resolve();
+      }, reject);
+
+    return;
   }
+
+  doc.switchToPage(pi);
+  doc[cmd](...args);
+
+  resolve();
 });
 
-const addPage = (doc, publicDir, assets, page, pi) => new Promise((resolve, reject) => {
-  const items = page.map(item => addItem(doc, publicDir, assets, item, pi));
+const addPage = (doc, publicDir, assets, fonts, page, pi) => new Promise((resolve, reject) => {
+  const items = page.map(item => addItem(doc, publicDir, assets, fonts, item, pi));
 
   Promise.settle(items)
     .then(resolve)
@@ -135,14 +137,14 @@ module.exports = (app) => {
     let t = process.hrtime();
     console.time('pdf generated');
 
-    const logInfo = log.info.bind(null, null, 'pdf');
+    // const logInfo = log.info.bind(null, null, 'pdf')
     const logError = log.error.bind(null, res, 'pdf');
 
     let obj;
 
     try {
       obj = JSON.parse(req.body.payload);
-    } catch (e) {
+    } catch (error) {
       logError('JSON Parse Error: ' + req.body.payload);
       return;
     }
@@ -169,6 +171,7 @@ module.exports = (app) => {
     Promise.settle(promises)
       .then((results) => {
         let assets = {};
+        let fonts = {};
 
         results.forEach((result) => {
           if (result.isFulfilled()) {
@@ -179,6 +182,8 @@ module.exports = (app) => {
             }
 
             if (value.fonts) {
+              fonts = value.fonts;
+
               _.forEach(value.fonts, (font, fontName) => {
                 doc.registerFont(fontName, font);
               });
@@ -190,7 +195,7 @@ module.exports = (app) => {
           doc.addPage();
         });
 
-        const pages = obj.pages.map((page, pi) => addPage(doc, publicDir, assets, page, pi));
+        const pages = obj.pages.map((page, pi) => addPage(doc, publicDir, assets, fonts, page, pi));
 
         Promise.settle(pages)
           .then(() => {
@@ -203,11 +208,12 @@ module.exports = (app) => {
             doc.end();
 
             assets = null;
+            fonts = null;
 
             t = process.hrtime(t);
             t = (t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2) + 'ms';
 
-            // logInfo('generated in ' + t);
+            // logInfo('generated in ' + t)
             console.timeEnd('pdf generated');
           })
           .catch(logError);

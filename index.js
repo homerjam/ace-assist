@@ -128,7 +128,7 @@ app.get('/', (req, res) => {
 //   res.send('User-agent: *\nDisallow: /');
 // });
 
-if (ENVIRONMENT !== 'development') {
+if (ENVIRONMENT === 'production') {
   const lex = letsEncryptExpress.create({
     server: ENVIRONMENT === 'production' ? 'https://acme-v01.api.letsencrypt.org/directory' : 'staging',
     agreeTos: true,

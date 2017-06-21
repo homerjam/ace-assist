@@ -1,10 +1,10 @@
 # ACE Assist
 
-A NodeJS app distributed as a docker image. Its purpose is simply to store high res images for on-demand resizing, and to generate PDFs.
+A NodeJS app distributed as a docker image. Its purpose is simply to store high-res images for on-demand resizing, and to generate PDFs.
 
-Resized images aren't persisted so it's advised to use a CDN in front of the app and/or a high powered host.
+Resized images aren't persisted so it's advisable to use a CDN in front of the app and/or a high powered host.
 
-The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations. The various endpoints are provided as outlined below.
+The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations. Various endpoints are provided, see below.
 
 &nbsp;
 ### /upload `[POST]`
@@ -149,7 +149,10 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 
 ### OSX Dependencies
 
-	# OpenCV (for face detection)
+    # xcode tools (required for attention)
+    $ xcode-select --install
+
+	# opencv (for face detection)
 	$ brew install opencv
 
 	# libvips
