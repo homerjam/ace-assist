@@ -5,7 +5,7 @@ const os = require('os');
 const duAsync = Promise.promisify(require('du'));
 const sharp = require('sharp');
 const attention = require('attention');
-const smartcrop = require('smartcrop-sharp');
+// const smartcrop = require('smartcrop-sharp');
 const prettyBytes = require('pretty-bytes');
 const diskusage = require('diskusage');
 

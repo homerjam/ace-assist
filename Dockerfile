@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:16.10
 
 RUN apt-get update; apt-get upgrade -y; apt-get clean
 
@@ -10,13 +10,13 @@ RUN apt-get update && apt-get install -y --fix-missing build-essential pkg-confi
 # RUN wget https://raw.github.com/logentries/le/master/install/linux/logentries_install.sh && sudo bash logentries_install.sh
 
 # Add nodesource PPA for specific version of node and install
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get update && apt-get install -y nodejs
 
 # Fix npm https://github.com/npm/npm/issues/9863
-RUN cd $(npm root -g)/npm \
-    && npm install fs-extra \
-    && sed -i -e s/graceful-fs/fs-extra/ -e s/fs\.rename/fs.move/ ./lib/utils/rename.js
+# RUN cd $(npm root -g)/npm \
+#     && npm install fs-extra \
+#     && sed -i -e s/graceful-fs/fs-extra/ -e s/fs\.rename/fs.move/ ./lib/utils/rename.js
 
 # Install opencv (for face detection)
 # RUN apt-get install -y --fix-missing libcv-dev libopencv-dev libhighgui-dev

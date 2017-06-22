@@ -13,7 +13,7 @@ const https = require('https');
 const passport = require('passport');
 const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
-const letsEncryptExpress = require('letsencrypt-express');
+const greenlockExpress = require('greenlock-express');
 
 // const consoleStamp = require('console-stamp')(console);
 
@@ -129,7 +129,7 @@ app.get('/', (req, res) => {
 // });
 
 if (ENVIRONMENT === 'production') {
-  const lex = letsEncryptExpress.create({
+  const lex = greenlockExpress.create({
     server: ENVIRONMENT === 'production' ? 'https://acme-v01.api.letsencrypt.org/directory' : 'staging',
     agreeTos: true,
     store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges' }),
