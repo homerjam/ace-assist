@@ -68,9 +68,13 @@ if (ENVIRONMENT === 'testing') {
 }
 
 app.set('logDir', path.join(__dirname, 'log'));
-app.set('publicDir', path.join(__dirname, PUBLIC_FOLDER));
 app.set('uploadDir', path.join(__dirname, 'uploads'));
-app.set('profilesDir', path.join(__dirname, 'profiles'));
+
+if (/^\/(.*)$/.test(PUBLIC_FOLDER)) {
+  app.set('publicDir', PUBLIC_FOLDER);
+} else {
+  app.set('publicDir', path.join(__dirname, PUBLIC_FOLDER));
+}
 
 if (!fs.existsSync(app.get('publicDir'))) {
   fs.mkdirSync(app.get('publicDir'));
@@ -102,10 +106,10 @@ const isAuthorised = (req, res, next) => {
 };
 
 require('./routes/file')(app, isAuthorised);
-require('./routes/log')(app);
-require('./routes/transform')(app);
-require('./routes/pdf')(app);
-require('./routes/utils')(app);
+require('./routes/log')(app, isAuthorised);
+require('./routes/transform')(app, isAuthorised);
+require('./routes/pdf')(app, isAuthorised);
+require('./routes/utils')(app, isAuthorised);
 
 app.use(express.static(app.get('publicDir')));
 

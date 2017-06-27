@@ -333,11 +333,11 @@ const handleTransform = (req, res) => {
 module.exports = (app) => {
   publicDir = app.get('publicDir');
 
-  app.get('/proxy/transform/*', handleTransform);
+  app.get('/:slug/proxy/transform/*', handleTransform);
 
-  app.get('/transform/:slug/:options/:fileName', handleTransform);
+  app.get('/:slug/transform/:options/:fileName/:originalFileName', handleTransform);
 
-  app.get('/transform/:slug/:fileName', handleTransform);
+  app.get('/:slug/transform/:options/:fileName', handleTransform);
 
-  app.get('/transform/:fileName', handleTransform);
+  app.get('/:slug/transform/:fileName', handleTransform);
 };

@@ -12,17 +12,16 @@ const Flow = require('../lib/flow');
 module.exports = function (app, isAuthorised) {
   const uploadDir = app.get('uploadDir');
   const publicDir = app.get('publicDir');
-  const profilesDir = app.get('profilesDir');
 
   const log = new Logger();
-  const image = new Image(profilesDir);
+  const image = new Image();
 
-  app.options('/file/upload?*', (req, res) => {
+  app.options('/_file/upload?*', (req, res) => {
     res.status(200);
     res.send();
   });
 
-  app.get('/file/upload?*', isAuthorised, (req, res) => {
+  app.get('/_file/upload?*', isAuthorised, (req, res) => {
     const flow = new Flow(uploadDir);
 
     flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
@@ -35,7 +34,7 @@ module.exports = function (app, isAuthorised) {
       });
   });
 
-  app.post('/file/upload?*', isAuthorised, multiparty, (req, res) => {
+  app.post('/_file/upload?*', isAuthorised, multiparty, (req, res) => {
     const logInfo = log.info.bind(null, null, 'upload');
     const logError = log.error.bind(null, res, 'upload');
 
@@ -98,12 +97,7 @@ module.exports = function (app, isAuthorised) {
       }, logError);
   });
 
-  app.get('/file/download/:slug/:fileName/:originalFileName', (req, res) => {
-    const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
-    res.download(filePath, req.params.originalFileName);
-  });
-
-  app.delete('/files/delete', isAuthorised, (req, res) => {
+  app.delete('/_files/delete', isAuthorised, (req, res) => {
     const files = req.body.files;
     const slug = req.body.slug;
 
@@ -132,5 +126,10 @@ module.exports = function (app, isAuthorised) {
       .then(() => {
         res.status(200).send('OK');
       }, logError);
+  });
+
+  app.get('/:slug/file/download/:fileName/:originalFileName', (req, res) => {
+    const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
+    res.download(filePath, req.params.originalFileName);
   });
 };

@@ -5,9 +5,11 @@ const PDFDocument = require('pdfkit');
 const sharp = require('sharp');
 const Logger = require('../lib/logger');
 
+let publicDir;
+
 const log = new Logger();
 
-const registerFonts = fonts => new Promise((resolve, reject) => {
+const getFonts = fonts => new Promise((resolve, reject) => {
   const promises = [];
 
   _.forEach(fonts, (url, name) => {
@@ -40,7 +42,7 @@ const registerFonts = fonts => new Promise((resolve, reject) => {
     .catch(reject);
 });
 
-const downloadAssets = assets => new Promise((resolve, reject) => {
+const getAssets = assets => new Promise((resolve, reject) => {
   const promises = [];
 
   _.forEach(assets, (url, key) => {
@@ -73,15 +75,15 @@ const downloadAssets = assets => new Promise((resolve, reject) => {
     .catch(reject);
 });
 
-const addItem = (doc, publicDir, assets, fonts, item, pi) => new Promise((resolve, reject) => {
+const addItem = (doc, obj, item, pi) => new Promise((resolve, reject) => {
   const cmd = Object.keys(item)[0];
   let args = item[cmd];
 
   args = _.isArray(args) ? args : [args];
 
   if (cmd === 'image') {
-    if (!/\.(png|jpe?g)/i.test(args[0]) && assets[args[0]]) {
-      args[0] = assets[args[0]];
+    if (!/\.(png|jpe?g)/i.test(args[0]) && obj.assets[args[0]]) {
+      args[0] = obj.assets[args[0]];
 
       doc.switchToPage(pi);
       doc[cmd](...args);
@@ -90,7 +92,7 @@ const addItem = (doc, publicDir, assets, fonts, item, pi) => new Promise((resolv
       return;
     }
 
-    const imagePath = [publicDir, args[0]].join('/');
+    const imagePath = [publicDir, obj.slug, args[0]].join('/');
 
     const image = sharp(imagePath);
     image.max();
@@ -118,8 +120,8 @@ const addItem = (doc, publicDir, assets, fonts, item, pi) => new Promise((resolv
   resolve();
 });
 
-const addPage = (doc, publicDir, assets, fonts, page, pi) => new Promise((resolve, reject) => {
-  const items = page.map(item => addItem(doc, publicDir, assets, fonts, item, pi));
+const addPage = (doc, obj, page, pi) => new Promise((resolve, reject) => {
+  const items = page.map(item => addItem(doc, obj, item, pi));
 
   Promise.settle(items)
     .then(resolve)
@@ -127,13 +129,13 @@ const addPage = (doc, publicDir, assets, fonts, page, pi) => new Promise((resolv
 });
 
 module.exports = (app) => {
-  const publicDir = app.get('publicDir');
+  publicDir = app.get('publicDir');
 
-  app.get('/pdf/test', (req, res) => {
-    res.status(200).send('<form method="POST" action="/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>');
+  app.get('/:slug/pdf/test', (req, res) => {
+    res.status(200).send('<form method="POST" action="/' + req.params.slug + '/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>');
   });
 
-  app.all('/pdf/download', (req, res) => {
+  app.all('/:slug/pdf/download', (req, res) => {
     let t = process.hrtime();
     console.time('pdf generated');
 
@@ -154,6 +156,7 @@ module.exports = (app) => {
       return;
     }
 
+    obj.slug = req.params.slug;
     obj.bufferPages = true;
 
     const doc = new PDFDocument(obj);
@@ -161,32 +164,32 @@ module.exports = (app) => {
     const promises = [];
 
     if (obj.fonts) {
-      promises.push(registerFonts(obj.fonts));
+      promises.push(getFonts(obj.fonts));
     }
 
     if (obj.assets) {
-      promises.push(downloadAssets(obj.assets));
+      promises.push(getAssets(obj.assets));
     }
 
     Promise.settle(promises)
       .then((results) => {
-        let assets = {};
-        let fonts = {};
+        obj.fonts = {};
+        obj.assets = {};
 
         results.forEach((result) => {
           if (result.isFulfilled()) {
             const value = result.value();
 
-            if (value.assets) {
-              assets = value.assets;
-            }
-
             if (value.fonts) {
-              fonts = value.fonts;
+              obj.fonts = value.fonts;
 
               _.forEach(value.fonts, (font, fontName) => {
                 doc.registerFont(fontName, font);
               });
+            }
+
+            if (value.assets) {
+              obj.assets = value.assets;
             }
           }
         });
@@ -195,7 +198,7 @@ module.exports = (app) => {
           doc.addPage();
         });
 
-        const pages = obj.pages.map((page, pi) => addPage(doc, publicDir, assets, fonts, page, pi));
+        const pages = obj.pages.map((page, pi) => addPage(doc, obj, page, pi));
 
         Promise.settle(pages)
           .then(() => {
@@ -207,17 +210,16 @@ module.exports = (app) => {
 
             doc.end();
 
-            assets = null;
-            fonts = null;
+            obj = null;
 
             t = process.hrtime(t);
             t = (t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2) + 'ms';
 
             // logInfo('generated in ' + t)
             console.timeEnd('pdf generated');
-          })
+          }, logError)
           .catch(logError);
-      })
+      }, logError)
       .catch(logError);
   });
 };

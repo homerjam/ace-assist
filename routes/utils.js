@@ -3,16 +3,13 @@ const fs = Promise.promisifyAll(require('fs'));
 const path = require('path');
 const os = require('os');
 const duAsync = Promise.promisify(require('du'));
-const sharp = require('sharp');
-const attention = require('attention');
-// const smartcrop = require('smartcrop-sharp');
 const prettyBytes = require('pretty-bytes');
 const diskusage = require('diskusage');
 
-module.exports = (app) => {
+module.exports = (app, isAuthorised) => {
   const publicDir = app.get('publicDir');
 
-  app.get('/utils/size', (req, res) => {
+  app.get('/_utils/size', isAuthorised, (req, res) => {
     fs.readdirAsync(publicDir)
       .then((filesOrDirs) => {
         const dirs = filesOrDirs.filter(fileOrDir => !/\./.test(fileOrDir));
@@ -68,7 +65,7 @@ module.exports = (app) => {
       });
   });
 
-  app.get('/utils/size/:slug', (req, res) => {
+  app.get('/_utils/size/:slug', isAuthorised, (req, res) => {
     const dir = path.join(publicDir, req.params.slug);
 
     duAsync(dir, {
@@ -86,7 +83,7 @@ module.exports = (app) => {
       });
   });
 
-  app.get('/utils/list/:slug', (req, res) => {
+  app.get('/_utils/list/:slug', isAuthorised, (req, res) => {
     const dir = path.join(publicDir, req.params.slug);
 
     fs.readdirAsync(dir)
@@ -98,59 +95,6 @@ module.exports = (app) => {
       }, (error) => {
         res.status(500);
         res.send(error);
-      });
-  });
-
-  app.get('/utils/image/metadata', (req, res) => {
-    const filePath = path.join(publicDir, req.query.slug, req.query.image || req.query.fileName);
-
-    sharp(filePath)
-      .metadata((err, info) => {
-        res.status(err ? 500 : 200).send(err || info);
-      });
-  });
-
-  app.get('/utils/image/palette', (req, res) => {
-    const filePath = path.join(publicDir, req.query.slug, req.query.image || req.query.fileName);
-
-    attention(filePath)
-      .palette((err, palette) => {
-        res.status(err ? 500 : 200).send(err || palette);
-      });
-  });
-
-  app.get('/utils/image/focus-point', (req, res) => {
-    const filePath = path.join(publicDir, req.query.slug, req.query.image || req.query.fileName);
-
-    attention(filePath)
-      .point((err, point) => {
-        res.status(err ? 500 : 200).send(err || point);
-      });
-  });
-
-  // app.get('/utils/image/focus-region', (req, res) => {
-  //   fs.readFileAsync(path.join(publicDir, req.query.slug, req.query.image || req.query.fileName))
-  //     .then((file) => {
-  //       smartcrop.crop(file, req.query)
-  //         .then((result) => {
-  //           res.status(200)
-  //           res.send(result.topCrop)
-  //         }, (error) => {
-  //           res.status(500)
-  //           res.send(error)
-  //         })
-  //     }, (error) => {
-  //       res.status(500)
-  //       res.send(error)
-  //     })
-  // })
-
-  app.get('/utils/image/focus/region', (req, res) => {
-    const filePath = path.join(publicDir, req.query.slug, req.query.image || req.query.fileName);
-
-    attention(filePath)
-      .region((err, region) => {
-        res.status(err ? 500 : 200).send(err || region);
       });
   });
 };

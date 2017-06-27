@@ -189,7 +189,7 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 ### Usage (production)
 
 	# run container in daemon mode from image and bind ports, volumes with environment variables
-	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT -v /shared:/app/public:rw \
+	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT -v /mnt/volume-fra1-01:/app/public:rw \
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=development" \
@@ -222,6 +222,18 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 
 	# Remove untagged images
 	$ docker rmi -f $(docker images | grep "<none>" | awk "{print \$3}")
+
+    # Resize partition to fill a resized volume on Digital Ocean (replace volume id)
+    $ sudo resize2fs /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01
+
+    # Add key to remote host to use ssh without a password
+    $ ssh-copy-id -i ~/.ssh/id_rsa.pub user@remotehost
+
+    # Backup using rsync
+    $ rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose user@remotehost:/mnt/vol1 /Volumes/vol1/backup
+
+    # Mount remote folder locally (requires sshfs/osxfuse)
+    $ sshfs user@remotehost:/mnt/vol1 ~/mnt/assist -ovolname=ASSIST
 
 ### Backup Script
 
