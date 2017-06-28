@@ -1,9 +1,10 @@
 .env
 .helpers
+.DS_Store
+nodemon.json
 node_modules
 public/**
 !public/*
-.DS_Store
 uploads/*
 tests
 typings

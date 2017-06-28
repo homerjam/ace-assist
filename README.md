@@ -173,6 +173,18 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 
 ### Usage (development)
 
+You can add a `nodemon.json` file to your project to configure the public folder etc. This is useful if you're mounting a remote directory for example.
+
+    // nodemon.json
+    {
+        "watch": ["routes", "lib"],
+        "env": {
+            "PUBLIC_FOLDER": "/mnt/assist1"
+        }
+    }
+
+Use these steps to get up and running in development.
+
 	# build docker image
 	$ docker build --no-cache -t studiothomas/ace-assist .
 

@@ -7,19 +7,13 @@ const compression = require('compression');
 const errorHandler = require('errorhandler');
 const helmet = require('helmet');
 const expires = require('connect-expires');
-const env = require('node-env-file');
 const http = require('http');
 const https = require('https');
 const passport = require('passport');
 const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
 const greenlockExpress = require('greenlock-express');
-
 // const consoleStamp = require('console-stamp')(console);
-
-if (!process.env.USERNAME) {
-  env(path.join(__dirname, '.env'));
-}
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
 const HTTP_PORT = process.env.HTTP_PORT || 49001;
@@ -28,7 +22,7 @@ const EMAIL = process.env.EMAIL || '';
 const DOMAINS = process.env.DOMAINS || '';
 const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
-const PUBLIC_FOLDER = ENVIRONMENT === 'testing' ? 'tests' : process.env.PUBLIC_FOLDER || 'public';
+let PUBLIC_FOLDER = process.env.PUBLIC_FOLDER || 'public';
 
 passport.use(new BasicStrategy({
   realm: 'ACE Assist',
@@ -65,6 +59,7 @@ app.use(passport.initialize());
 
 if (ENVIRONMENT === 'testing') {
   app.use('/tests', express.static(path.join(__dirname, 'tests')));
+  PUBLIC_FOLDER = 'tests';
 }
 
 app.set('logDir', path.join(__dirname, 'log'));
@@ -110,6 +105,7 @@ require('./routes/log')(app, isAuthorised);
 require('./routes/transform')(app, isAuthorised);
 require('./routes/pdf')(app, isAuthorised);
 require('./routes/utils')(app, isAuthorised);
+require('./routes/image')(app, isAuthorised);
 
 app.use(express.static(app.get('publicDir')));
 

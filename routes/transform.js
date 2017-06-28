@@ -183,7 +183,11 @@ const sendResult = (res, options, buffer) => {
   //   console.log(result)
   // })
 
-  global.gc();
+  try {
+    global.gc();
+  } catch (error) {
+    console.error('Couldn\'t collect garbage, please run with --expose-gc option');
+  }
 };
 
 const handleRequest = (req, res) => {
