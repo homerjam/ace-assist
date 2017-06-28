@@ -2,7 +2,7 @@ const _ = require('lodash');
 const Promise = require('bluebird');
 const sharp = require('sharp');
 const request = require('request');
-const mime = require('mime');
+// const mime = require('mime');
 // const cv = require('opencv');
 // const usage = require('usage');
 const Logger = require('../lib/logger');
@@ -36,9 +36,7 @@ Convert format eg. jpg -> png: [filename].jpg.png
 
 */
 
-const transform = (streamOrPath, settings, mimeType, format, faces) => new Promise((resolve, reject) => {
-  faces = faces || [];
-
+const transform = (settings, streamOrPath, extra) => new Promise((resolve, reject) => {
   const image = sharp(streamOrPath);
 
   image.metadata()
@@ -134,10 +132,10 @@ const transform = (streamOrPath, settings, mimeType, format, faces) => new Promi
           }
         }
 
-        if (format === 'png') {
+        if (settings.outputFormat === 'png') {
           image.png();
 
-        } else if (format === 'webp') {
+        } else if (settings.outputFormat === 'webp') {
           image.webp({
             quality: parseInt(settings.q || 100, 10),
           });
@@ -162,22 +160,50 @@ const transform = (streamOrPath, settings, mimeType, format, faces) => new Promi
     .catch(reject);
 });
 
-const handleTransform = (req, res) => {
+const sendResult = (res, options, buffer) => {
+  if (res.finished) {
+    return;
+  }
+
+  options.time = process.hrtime(options.time);
+  options.time = (options.time[0] === 0 ? '' : options.time[0]) + (options.time[1] / 1000 / 1000).toFixed(2) + 'ms';
+
+  // logInfo(options.time)
+  console.timeEnd(options.logPrefix);
+
+  res.set('Content-Type', mimeTypes[options.outputFormat]);
+  res.set('Last-Modified', new Date(0).toUTCString());
+  res.set('X-Time-Elapsed', options.time);
+
+  res.status(200).send(buffer);
+
+  buffer = null;
+
+  // usage.lookup(process.pid, (error, result) => {
+  //   console.log(result)
+  // })
+
+  global.gc();
+};
+
+const handleRequest = (req, res) => {
   if (res.finished) {
     return;
   }
 
   const mode = req.params.fileName ? 'local' : 'proxy';
 
-  let settings;
+  let settings = {};
   let options;
   let useQuery;
+  let file;
+  // let mimeType;
 
   try {
+    useQuery = true;
+
     // Take settings from json string after ?
     settings = JSON.parse(Object.keys(req.query)[0]);
-
-    useQuery = true;
 
     if (!_.isObject(settings)) {
       log.error(res, req.url, 'invalid settings');
@@ -229,18 +255,14 @@ const handleTransform = (req, res) => {
     });
   }
 
-  let file;
-  let mimeType;
-  let format;
-
   if (mode === 'local') {
     const slug = req.params.slug || settings.slug;
     const fileNameParts = req.params.fileName.split('.');
     const fileName = fileNameParts.length > 2 ? fileNameParts.slice(0, fileNameParts.length - 1).join('.') : req.params.fileName;
 
     file = [publicDir, slug, fileName].join('/');
-    mimeType = mime.lookup(file);
-    format = fileNameParts.slice(-1)[0].toLowerCase();
+    // mimeType = mime.lookup(file);
+    settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
 
     settings.slug = slug;
   }
@@ -257,62 +279,56 @@ const handleTransform = (req, res) => {
       }
     }
 
-    mimeType = mime.lookup(req.params[0]);
-    format = req.params[0].split('.').slice(-1)[0].toLowerCase();
+    // mimeType = mime.lookup(req.params[0]);
+    settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
   const logPrefix = req.originalUrl + ' ' + JSON.stringify(settings);
+  const time = process.hrtime();
+
+  console.time(logPrefix);
+
   const logInfo = log.info.bind(null, null, logPrefix);
   const logError = log.error.bind(null, res, logPrefix);
 
-  let t = process.hrtime();
-  console.time(logPrefix);
+  const sendResultHandler = sendResult.bind(null, res, {
+    logPrefix,
+    time,
+    outputFormat: settings.outputFormat,
+  });
 
-  const sendResult = (buffer) => {
-    if (res.finished) {
-      return;
-    }
-
-    t = process.hrtime(t);
-    t = (t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2) + 'ms';
-
-    // logInfo(t)
-    console.timeEnd(logPrefix);
-
-    res.set('Content-Type', mimeTypes[format]);
-    res.set('Last-Modified', new Date(0).toUTCString());
-    res.set('X-Time-Elapsed', t);
-
-    res.status(200).send(buffer);
-
-    buffer = null;
-
-    // usage.lookup(process.pid, function(err, result) {
-    //     console.log(result)
-    // })
-
-    global.gc();
-  };
+  const transformHandler = transform.bind(null, settings);
 
   if (mode === 'local') {
-    if (settings.g !== undefined && settings.g.toLowerCase() === 'face') {
+    if (settings.g !== undefined && /face/i.test(settings.g)) {
       cv.readImage(file, (error, mat) => {
         if (error) {
           return logError(error);
         }
 
-        return mat.detectObject(cv.FACE_CASCADE, {}, (err, faces) => {
-          transform(mat.toBuffer(), settings, mimeType, format, faces)
-            .then(sendResult)
+        return mat.detectObject(cv.FACE_CASCADE, {}, (error, faces) => {
+          if (error) {
+            logError(error);
+            return;
+          }
+
+          transformHandler(mat.toBuffer(), {
+            faces,
+          })
+            .then(sendResultHandler, logError)
             .catch(logError);
         });
       });
-    } else {
-      transform(file, settings, mimeType, format)
-        .then(sendResult)
-        .catch(logError);
+
+      return;
     }
-  } else if (mode === 'proxy') {
+
+    transformHandler(file)
+      .then(sendResultHandler, logError)
+      .catch(logError);
+  }
+
+  if (mode === 'proxy') {
     request({
       method: 'GET',
       url: 'http://' + file,
@@ -323,8 +339,8 @@ const handleTransform = (req, res) => {
         return;
       }
 
-      transform(body, settings, mimeType, format)
-        .then(sendResult)
+      transformHandler(body)
+        .then(sendResultHandler, logError)
         .catch(logError);
     });
   }
@@ -333,11 +349,11 @@ const handleTransform = (req, res) => {
 module.exports = (app) => {
   publicDir = app.get('publicDir');
 
-  app.get('/:slug/proxy/transform/*', handleTransform);
+  app.get('/:slug/proxy/transform/*', handleRequest);
 
-  app.get('/:slug/transform/:options/:fileName/:originalFileName', handleTransform);
+  app.get('/:slug/transform/:options/:fileName/:originalFileName', handleRequest);
 
-  app.get('/:slug/transform/:options/:fileName', handleTransform);
+  app.get('/:slug/transform/:options/:fileName', handleRequest);
 
-  app.get('/:slug/transform/:fileName', handleTransform);
+  app.get('/:slug/transform/:fileName', handleRequest);
 };
