@@ -240,7 +240,7 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
     $ ssh-copy-id -i ~/.ssh/id_rsa.pub user@remotehost
 
     # Backup using rsync
-    $ rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose user@remotehost:/mnt/vol1 /Volumes/vol1/backup
+    $ rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose user@remotehost:/mnt/vol1/ /Volumes/vol1/backup
 
     # Mount remote folder locally (requires sshfs/osxfuse)
     $ sshfs user@remotehost:/mnt/vol1 ~/mnt/assist -ovolname=ASSIST
