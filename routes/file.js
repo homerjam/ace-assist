@@ -16,12 +16,12 @@ module.exports = function (app, isAuthorised) {
   const log = new Logger();
   const image = new Image();
 
-  app.options('/_file/upload?*', (req, res) => {
+  app.options('/:slug/file/upload?*', (req, res) => {
     res.status(200);
     res.send();
   });
 
-  app.get('/_file/upload?*', isAuthorised, (req, res) => {
+  app.get('/:slug/file/upload?*', isAuthorised, (req, res) => {
     const flow = new Flow(uploadDir);
 
     flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
@@ -34,7 +34,9 @@ module.exports = function (app, isAuthorised) {
       });
   });
 
-  app.post('/_file/upload?*', isAuthorised, multiparty, (req, res) => {
+  app.post('/:slug/file/upload?*', isAuthorised, multiparty, (req, res) => {
+    const slug = req.params.slug;
+
     const logInfo = log.info.bind(null, null, 'upload');
     const logError = log.error.bind(null, res, 'upload');
 
@@ -58,12 +60,12 @@ module.exports = function (app, isAuthorised) {
           return;
         }
 
-        if (!fs.existsSync(path.join(publicDir, options.slug))) {
-          fs.mkdirSync(path.join(publicDir, options.slug));
+        if (!fs.existsSync(path.join(publicDir, slug))) {
+          fs.mkdirSync(path.join(publicDir, slug));
         }
 
         const filePath = path.join(uploadDir, uploadResult.filename);
-        const filePathOut = path.join(publicDir, options.slug, uuid.v1());
+        const filePathOut = path.join(publicDir, slug, uuid.v1());
 
         image.processImage(filePath, filePathOut)
           .then((metadata) => {
@@ -88,7 +90,7 @@ module.exports = function (app, isAuthorised) {
               return;
             }
 
-            image.dzi(path.join(publicDir, options.slug, metadata.fileName), options.dzi)
+            image.dzi(path.join(publicDir, slug, metadata.fileName), options.dzi)
               .then((dzi) => {
                 info.dzi = dzi;
                 res.status(200).send(info);
@@ -97,9 +99,9 @@ module.exports = function (app, isAuthorised) {
       }, logError);
   });
 
-  app.delete('/_files/delete', isAuthorised, (req, res) => {
+  app.delete('/:slug/file/delete', isAuthorised, (req, res) => {
+    const slug = req.params.slug;
     const files = req.body.files;
-    const slug = req.body.slug;
 
     const logInfo = log.info.bind(null, null, 'delete');
     const logError = log.error.bind(null, res, 'delete');

@@ -7,11 +7,15 @@ Resized images aren't persisted so it's advisable to use a CDN in front of the a
 The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations. Various endpoints are provided, see below.
 
 &nbsp;
-### /file/upload `[POST]`
+### /:slug/file/upload `[POST]`
 
 [Flow.js](https://github.com/flowjs/flow.js) compatible upload target.
 
-| Parameter | Description |
+| Param | Description |
+| --- | --- |
+| `slug` | Project slug/folder |
+
+| Data | Description |
 | --- | --- |
 | `options` | JSON containing upload options, see below... |
 
@@ -19,23 +23,25 @@ The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) lib
 
 | Option | Description |
 | --- | --- |
-| `slug` | Project slug/folder |
 | `dzi` | Deep Zoom image options |
 
 &nbsp;
-### /files/delete `[DELETE]`
+### /:slug/file/delete `[DELETE]`
 
-| Parameter | Description |
+| Param | Description |
 | --- | --- |
 | `slug` | Project slug/folder |
+
+| Data | Description |
+| --- | --- |
 | `files[]` | Array of filenames to delete |
 
 &nbsp;
-### /transform/:slug/:options/:fileName `[GET]`
+### /:slug/transform/:options/:fileName `[GET]`
 
 Resizes the requested image on-demand.
 
-| Parameter | Description |
+| Param | Description |
 | --- | --- |
 | `slug` | Project slug/folder |
 | `filename` | File to be transformed |
@@ -66,9 +72,13 @@ Multiple options can be combined with semi-colons:
 | `sh` | Sharpen `0.5+` |
 
 &nbsp;
-### /pdf/download `[POST]`
+### /:slug/pdf/download `[POST]`
 
 Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](https://github.com/devongovett/pdfkit) to generate PDFs.
+
+| Parameter | Description |
+| --- | --- |
+| `slug` | Project slug/folder |
 
     {
         "fileName": "lightbox.pdf",
