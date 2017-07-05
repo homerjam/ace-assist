@@ -266,6 +266,6 @@ Use these steps to get up and running in development.
     # brew install ssh-copy-id
     # $ ssh-copy-id -i ~/.ssh/id_rsa.pub user@remotehost
 
-    #rsync -rztche ssh root@remotehost:/shared /Volumes/HD/backup
+    # rsync -rztche ssh root@remotehost:/shared /Volumes/HD/backup
 
     rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose root@remotehost:/shared /Volumes/HD/backup
