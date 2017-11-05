@@ -18,6 +18,8 @@
     "no-underscore-dangle": 0,
     "global-require": 0,
     "class-methods-use-this": 1,
-    "no-undef": 1
+    "no-undef": 2,
+    "prefer-destructuring": 1,
+    "no-plusplus": 1
   }
 }

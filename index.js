@@ -12,7 +12,9 @@ const https = require('https');
 const passport = require('passport');
 const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
+const greenlock = require('greenlock');
 const greenlockExpress = require('greenlock-express');
+const redirectHttps = require('redirect-https');
 // const consoleStamp = require('console-stamp')(console);
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
@@ -24,9 +26,10 @@ const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
 let PUBLIC_FOLDER = process.env.PUBLIC_FOLDER || 'public';
 
-passport.use(new BasicStrategy({
-  realm: 'ACE Assist',
-},
+passport.use(new BasicStrategy(
+  {
+    realm: 'ACE Assist',
+  },
   (username, password, done) => {
     if (username !== USERNAME) {
       return done(null, false);
@@ -130,16 +133,16 @@ app.get('/', (req, res) => {
 
 if (ENVIRONMENT === 'production') {
   const lex = greenlockExpress.create({
-    server: ENVIRONMENT === 'production' ? 'https://acme-v01.api.letsencrypt.org/directory' : 'staging',
-    agreeTos: true,
-    store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges' }),
+    // store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges' }),
+    server: ENVIRONMENT === 'production' ? greenlock.productionServerUrl : greenlock.stagingServerUrl,
     email: EMAIL,
+    agreeTos: true,
     approveDomains: DOMAINS.split(','),
     app,
     debug: ENVIRONMENT !== 'production',
   });
 
-  http.createServer(lex.middleware(require('redirect-https')())).listen(HTTP_PORT, function () {
+  http.createServer(lex.middleware(redirectHttps())).listen(HTTP_PORT, function () {
     console.log('Listening for ACME http-01 challenges on', this.address());
   });
 

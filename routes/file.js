@@ -13,7 +13,6 @@ module.exports = function (app, isAuthorised) {
   const uploadDir = app.get('uploadDir');
   const publicDir = app.get('publicDir');
 
-  const log = new Logger();
   const image = new Image();
 
   app.options('/:slug/file/upload?*', (req, res) => {
@@ -37,8 +36,8 @@ module.exports = function (app, isAuthorised) {
   app.post('/:slug/file/upload?*', isAuthorised, multiparty, (req, res) => {
     const slug = req.params.slug;
 
-    const logInfo = log.info.bind(null, null, 'upload');
-    const logError = log.error.bind(null, res, 'upload');
+    // const logInfo = Logger.info.bind(null, null, 'upload');
+    const logError = Logger.error.bind(null, res, 'upload');
 
     const flow = new Flow(uploadDir);
 
@@ -90,7 +89,7 @@ module.exports = function (app, isAuthorised) {
               return;
             }
 
-            image.dzi(path.join(publicDir, slug, metadata.fileName), options.dzi)
+            Image.dzi(path.join(publicDir, slug, metadata.fileName), options.dzi)
               .then((dzi) => {
                 info.dzi = dzi;
                 res.status(200).send(info);
@@ -103,8 +102,8 @@ module.exports = function (app, isAuthorised) {
     const slug = req.params.slug;
     const files = req.body.files;
 
-    const logInfo = log.info.bind(null, null, 'delete');
-    const logError = log.error.bind(null, res, 'delete');
+    // const logInfo = Logger.info.bind(null, null, 'delete');
+    const logError = Logger.error.bind(null, res, 'delete');
 
     const deleteFiles = files.map(file => new Promise((resolve, reject) => {
       const name = path.parse(file).name;

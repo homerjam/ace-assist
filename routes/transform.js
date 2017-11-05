@@ -17,8 +17,6 @@ const mimeTypes = {
 
 let publicDir;
 
-const log = new Logger();
-
 /*
 
 Usage:
@@ -36,7 +34,7 @@ Convert format eg. jpg -> png: [filename].jpg.png
 
 */
 
-const transform = (settings, streamOrPath, extra) => new Promise((resolve, reject) => {
+const transform = (settings, streamOrPath) => new Promise((resolve, reject) => {
   const image = sharp(streamOrPath);
 
   image.metadata()
@@ -171,8 +169,9 @@ const sendResult = (res, options, buffer) => {
   // logInfo(options.time)
   console.timeEnd(options.logPrefix);
 
-  res.set('Content-Type', mimeTypes[options.outputFormat]);
+  res.set('Content-Type', mimeTypes[options.settings.outputFormat]);
   res.set('Last-Modified', new Date(0).toUTCString());
+  res.set('Cache-Tag', options.settings.slug);
   res.set('X-Time-Elapsed', options.time);
 
   res.status(200).send(buffer);
@@ -210,7 +209,7 @@ const handleRequest = (req, res) => {
     settings = JSON.parse(Object.keys(req.query)[0]);
 
     if (!_.isObject(settings)) {
-      log.error(res, req.url, 'invalid settings');
+      Logger.error(res, req.url, 'invalid settings');
       return;
     }
   } catch (error) {
@@ -227,7 +226,7 @@ const handleRequest = (req, res) => {
     }
 
     if (!options) {
-      log.error(res, req.url, error);
+      Logger.error(res, req.url, error);
       return;
     }
   }
@@ -239,7 +238,7 @@ const handleRequest = (req, res) => {
     options = options.filter(option => /_|:/.test(option));
 
     if (options.length === 0) {
-      log.error(res, req.url, 'invalid options');
+      Logger.error(res, req.url, 'invalid options');
       return;
     }
 
@@ -265,7 +264,7 @@ const handleRequest = (req, res) => {
     const fileName = fileNameParts.length > 2 ? fileNameParts.slice(0, fileNameParts.length - 1).join('.') : req.params.fileName;
 
     file = [publicDir, slug, fileName].join('/');
-    // mimeType = mime.lookup(file);
+    // mimeType = mime.getType(file);
     settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
 
     settings.slug = slug;
@@ -283,7 +282,7 @@ const handleRequest = (req, res) => {
       }
     }
 
-    // mimeType = mime.lookup(req.params[0]);
+    // mimeType = mime.getType(req.params[0]);
     settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
@@ -292,40 +291,40 @@ const handleRequest = (req, res) => {
 
   console.time(logPrefix);
 
-  const logInfo = log.info.bind(null, null, logPrefix);
-  const logError = log.error.bind(null, res, logPrefix);
+  // const logInfo = Logger.info.bind(null, null, logPrefix);
+  const logError = Logger.error.bind(null, res, logPrefix);
 
   const sendResultHandler = sendResult.bind(null, res, {
     logPrefix,
     time,
-    outputFormat: settings.outputFormat,
+    settings,
   });
 
   const transformHandler = transform.bind(null, settings);
 
   if (mode === 'local') {
-    if (settings.g !== undefined && /face/i.test(settings.g)) {
-      cv.readImage(file, (error, mat) => {
-        if (error) {
-          return logError(error);
-        }
+    // if (settings.g !== undefined && /face/i.test(settings.g)) {
+    //   cv.readImage(file, (error, mat) => {
+    //     if (error) {
+    //       return logError(error);
+    //     }
 
-        return mat.detectObject(cv.FACE_CASCADE, {}, (error, faces) => {
-          if (error) {
-            logError(error);
-            return;
-          }
+    //     return mat.detectObject(cv.FACE_CASCADE, {}, (error, faces) => {
+    //       if (error) {
+    //         logError(error);
+    //         return;
+    //       }
 
-          transformHandler(mat.toBuffer(), {
-            faces,
-          })
-            .then(sendResultHandler, logError)
-            .catch(logError);
-        });
-      });
+    //       transformHandler(mat.toBuffer(), {
+    //         faces,
+    //       })
+    //         .then(sendResultHandler, logError)
+    //         .catch(logError);
+    //     });
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
 
     transformHandler(file)
       .then(sendResultHandler, logError)
