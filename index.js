@@ -131,15 +131,22 @@ app.get('/', (req, res) => {
 //   res.send('User-agent: *\nDisallow: /');
 // });
 
-if (ENVIRONMENT === 'production') {
+if (ENVIRONMENT !== 'development') {
+  const debug = ENVIRONMENT !== 'production';
+
   const lex = greenlockExpress.create({
-    // store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges' }),
-    server: ENVIRONMENT === 'production' ? greenlock.productionServerUrl : greenlock.stagingServerUrl,
+    store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges', debug }),
+    challenges: {
+      'http-01': require('le-challenge-fs').create({ webrootPath: '/tmp/acme-challenges', debug }),
+      'tls-sni-01': require('le-challenge-sni').create({ debug }),
+      'tls-sni-02': require('le-challenge-sni').create({ debug }),
+    },
+    server: ENVIRONMENT !== 'production' ? greenlock.stagingServerUrl : greenlock.productionServerUrl,
     email: EMAIL,
     agreeTos: true,
     approveDomains: DOMAINS.split(','),
     app,
-    debug: ENVIRONMENT !== 'production',
+    debug,
   });
 
   http.createServer(lex.middleware(redirectHttps())).listen(HTTP_PORT, function () {
@@ -150,7 +157,9 @@ if (ENVIRONMENT === 'production') {
     console.log('Listening for ACME tls-sni-01 challenges and serve app on', this.address());
   });
 
-} else {
+}
+
+if (ENVIRONMENT === 'development') {
   const httpServer = http.createServer(app);
   httpServer.on('listening', () => {
     console.log('Express server listening on port ' + HTTP_PORT);
