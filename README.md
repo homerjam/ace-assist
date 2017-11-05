@@ -200,7 +200,7 @@ Use these steps to get up and running in development.
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=development" \
         -e "EMAIL=email@domain.com" \
-        -e "DOMAINS=example.com" \
+        -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
         studiothomas/ace-assist
@@ -214,9 +214,9 @@ Use these steps to get up and running in development.
 	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT -v /mnt/volume-fra1-01:/app/public:rw \
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
-        -e "ENVIRONMENT=development" \
+        -e "ENVIRONMENT=production" \
         -e "EMAIL=email@domain.com" \
-        -e "DOMAINS=example.com" \
+        -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
         studiothomas/ace-assist
