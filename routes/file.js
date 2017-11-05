@@ -13,8 +13,6 @@ module.exports = function (app, isAuthorised) {
   const uploadDir = app.get('uploadDir');
   const publicDir = app.get('publicDir');
 
-  const image = new Image();
-
   app.options('/:slug/file/upload?*', (req, res) => {
     res.status(200);
     res.send();
@@ -66,7 +64,7 @@ module.exports = function (app, isAuthorised) {
         const filePath = path.join(uploadDir, uploadResult.filename);
         const filePathOut = path.join(publicDir, slug, uuid.v1());
 
-        image.processImage(filePath, filePathOut)
+        Image.processImage(filePath, filePathOut)
           .then((metadata) => {
             const info = {
               fileName: metadata.fileName,
