@@ -7,8 +7,6 @@ const Logger = require('../lib/logger');
 
 let publicDir;
 
-const log = new Logger();
-
 const getFonts = fonts => new Promise((resolve, reject) => {
   const promises = [];
 
@@ -139,8 +137,8 @@ module.exports = (app) => {
     let t = process.hrtime();
     console.time('pdf generated');
 
-    // const logInfo = log.info.bind(null, null, 'pdf')
-    const logError = log.error.bind(null, res, 'pdf');
+    // const logInfo = Logger.info.bind(null, null, 'pdf')
+    const logError = Logger.error.bind(null, res, 'pdf');
 
     let obj;
 
