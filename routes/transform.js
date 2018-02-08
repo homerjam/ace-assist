@@ -2,15 +2,17 @@ const _ = require('lodash');
 const Promise = require('bluebird');
 const sharp = require('sharp');
 const request = require('request');
-// const mime = require('mime');
 // const cv = require('opencv');
-// const usage = require('usage');
+const si = require('systeminformation');
 const Logger = require('../lib/logger');
+
+const MIN_AVAIL_MEM = 64000000;
 
 const mimeTypes = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   png: 'image/png',
+  webp: 'image/webp',
   gif: 'image/gif',
   svg: 'image/jpeg',
 };
@@ -29,6 +31,7 @@ x,y,x2,y2 - crop coords
 w - width [pixels (< 1: percent)]
 h - height [pixels (< 1: percent)]
 sm - scale mode [fit/contain|fill/cover]
+f - output format [jpg/png/webp]
 
 Convert format eg. jpg -> png: [filename].jpg.png
 
@@ -130,6 +133,10 @@ const transform = (settings, streamOrPath) => new Promise((resolve, reject) => {
           }
         }
 
+        if (settings.f && mimeTypes[settings.f]) {
+          settings.outputFormat = settings.f;
+        }
+
         if (settings.outputFormat === 'png') {
           image.png();
 
@@ -178,12 +185,12 @@ const sendResult = (res, options, buffer) => {
 
   buffer = null;
 
-  // usage.lookup(process.pid, (error, result) => {
-  //   console.log(result)
-  // })
-
   try {
-    global.gc();
+    si.mem((mem) => {
+      if (mem.available < MIN_AVAIL_MEM) {
+        global.gc();
+      }
+    });
   } catch (error) {
     console.error('Couldn\'t collect garbage, please run with --expose-gc option');
   }
@@ -200,7 +207,6 @@ const handleRequest = (req, res) => {
   let options;
   let useQuery;
   let file;
-  // let mimeType;
 
   try {
     useQuery = true;
@@ -258,16 +264,15 @@ const handleRequest = (req, res) => {
     });
   }
 
+  const slug = req.params.slug || settings.slug;
+  settings.slug = slug;
+
   if (mode === 'local') {
-    const slug = req.params.slug || settings.slug;
     const fileNameParts = req.params.fileName.split('.');
     const fileName = fileNameParts.length > 2 ? fileNameParts.slice(0, fileNameParts.length - 1).join('.') : req.params.fileName;
 
     file = [publicDir, slug, fileName].join('/');
-    // mimeType = mime.getType(file);
     settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
-
-    settings.slug = slug;
   }
 
   if (mode === 'proxy') {
@@ -282,7 +287,6 @@ const handleRequest = (req, res) => {
       }
     }
 
-    // mimeType = mime.getType(req.params[0]);
     settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
