@@ -1,4 +1,4 @@
-FROM ubuntu:17.10
+FROM ubuntu:16.04
 
 RUN apt-get update; apt-get upgrade -y; apt-get clean
 
