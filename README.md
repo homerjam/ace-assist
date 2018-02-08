@@ -70,6 +70,7 @@ Multiple options can be combined with semi-colons:
 | `y2` | MANUAL Crop method bottom-right y-axis coord  `0-1` |
 | `bl` | Blur `0.3+` |
 | `sh` | Sharpen `0.5+` |
+| `f` | Output format: `jpg`, `png`, `webp` |
 
 &nbsp;
 ### /:slug/pdf/download `[POST]`
