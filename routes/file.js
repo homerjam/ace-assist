@@ -3,8 +3,10 @@ const Promise = require('bluebird');
 const fs = Promise.promisifyAll(require('fs'));
 const multiparty = require('connect-multiparty')();
 const uuid = require('uuid');
-const Glob = require('glob').Glob;
+const mime = require('mime');
+// const Glob = require('glob').Glob;
 const rimrafAsync = Promise.promisify(require('rimraf'));
+const recursive = require('recursive-readdir');
 const Logger = require('../lib/logger');
 const Image = require('../lib/image');
 const Flow = require('../lib/flow');
@@ -15,7 +17,6 @@ module.exports = ({
   app,
   authMiddleware,
   uploadDir,
-  publicDir,
   accessKeyId,
   secretAccessKey,
   bucket,
@@ -71,18 +72,20 @@ module.exports = ({
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-        const base = uuid.v1();
+        const name = uuid.v1();
+        const ext = path.parse(tmpFile).ext.toLowerCase().replace('jpeg', 'jpg');
+        const mimeType = mime.getType(tmpFile);
 
         const objects = [
           {
             file: tmpFile,
-            key: `${slug}/${base}${path.parse(tmpFile).ext}`,
+            key: `${slug}/${name}${ext}`,
           },
         ];
 
         let metadata = {};
 
-        if (/^(image)$/.test(options.type)) {
+        if (/^(image)\/(.+)$/.test(mimeType)) {
           metadata = await Image.processImage(tmpFile);
 
           if (options.dzi) {
@@ -90,58 +93,75 @@ module.exports = ({
           }
         }
 
-        const results = await Promise.all(objects.map(object => s3.upload(object.file, object.key, base)));
+        const extrasPath = path.join(uploadDir, path.parse(tmpFile).name);
+        const extrasFiles = await recursive(extrasPath);
+
+        const extraObjects = extrasFiles.map(file => ({
+          file,
+          key: `${slug}/${name}${file.replace(extrasPath, '')}`,
+        }));
+
+        const transfers = objects.map(object => s3.upload(object.file, object.key))
+          .concat(extraObjects.map(object => s3.upload(object.file, object.key)));
+
+        const results = await Promise.all(transfers);
 
         const result = results[0];
 
+        result.file = {
+          name,
+          ext,
+        };
         result.original.fileName = upload.originalFilename;
         result.metadata = metadata;
 
-        // await Promise.all(objects.map(object => fs.unlinkAsync(object.file)));
+        await Promise.all(objects.map(object => fs.unlinkAsync(object.file))
+          .concat(rimrafAsync(extrasPath)));
 
         res.status(200);
         res.send(result);
 
       } catch (error) {
+        console.error(error);
         Logger.error(res, 'upload', error);
       }
     })
   );
 
-  app.delete('/:slug/file/delete', authMiddleware, (req, res) => {
-    const slug = req.params.slug;
-    const files = req.body.files;
+  // app.delete('/:slug/file/delete', authMiddleware, (req, res) => {
+  //   const slug = req.params.slug;
+  //   const files = req.body.files;
 
-    // const logInfo = Logger.info.bind(null, null, 'delete');
-    const logError = Logger.error.bind(null, res, 'delete');
+  //   // const logInfo = Logger.info.bind(null, null, 'delete');
+  //   const logError = Logger.error.bind(null, res, 'delete');
 
-    const deleteFiles = files.map(file => new Promise((resolve, reject) => {
-      const name = path.parse(file).name;
+  //   const deleteFiles = files.map(file => new Promise((resolve, reject) => {
+  //     const name = path.parse(file).name;
 
-      const pattern = `${path.join(publicDir, slug, name)}*`;
+  //     const pattern = `${path.join(publicDir, slug, name)}*`;
 
-      Glob(pattern, (error, _files) => {
-        const _deleteFiles = _files.map((_fileOrDir) => {
-          if (_fileOrDir.indexOf('.') !== -1) {
-            return fs.unlinkAsync(_fileOrDir);
-          }
-          return rimrafAsync(_fileOrDir);
-        });
+  //     Glob(pattern, (error, _files) => {
+  //       const _deleteFiles = _files.map((_fileOrDir) => {
+  //         if (_fileOrDir.indexOf('.') !== -1) {
+  //           return fs.unlinkAsync(_fileOrDir);
+  //         }
+  //         return rimrafAsync(_fileOrDir);
+  //       });
 
-        Promise.all(_deleteFiles)
-          .then(resolve, reject);
-      });
-    }));
+  //       Promise.all(_deleteFiles)
+  //         .then(resolve, reject);
+  //     });
+  //   }));
 
-    Promise.all(deleteFiles)
-      .then(() => {
-        res.status(200).send('OK');
-      }, logError);
-  });
+  //   Promise.all(deleteFiles)
+  //     .then(() => {
+  //       res.status(200).send('OK');
+  //     }, logError);
+  // });
 
-  app.get('/:slug/file/download/:fileName/:originalFileName', (req, res) => {
-    const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
-    res.download(filePath, req.params.originalFileName);
-  });
+  // app.get('/:slug/file/download/:fileName/:originalFileName', (req, res) => {
+  //   const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
+  //   res.download(filePath, req.params.originalFileName);
+  // });
 
 };

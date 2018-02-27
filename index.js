@@ -29,6 +29,8 @@ const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
 const BUCKET = process.env.BUCKET;
 
+process.on('unhandledRejection', result => console.error(result));
+
 passport.use(new BasicStrategy(
   {
     realm: 'ACE Assist',

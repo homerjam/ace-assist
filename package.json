@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.202.0",
+    "axios": "^0.18.0",
     "batch": "^0.6.1",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
@@ -50,6 +51,7 @@
     "password-hash": "^1.2.2",
     "pdfkit": "github:homerjam/pdfkit#font-fix-2-dist",
     "pretty-bytes": "^4.0.2",
+    "recursive-readdir": "^2.2.2",
     "redirect-https": "^1.1.4",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",

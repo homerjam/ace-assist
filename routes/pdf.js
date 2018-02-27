@@ -1,79 +1,32 @@
 const _ = require('lodash');
-const request = require('request-promise');
+const axios = require('axios');
 const Promise = require('bluebird');
 const PDFDocument = require('pdfkit');
 const sharp = require('sharp');
 const Logger = require('../lib/logger');
+const asyncMiddleware = require('../lib/async-middleware');
 
-let _publicDir;
+const getUrls = async (fonts) => {
+  const result = {};
 
-const getFonts = fonts => new Promise((resolve, reject) => {
   const promises = [];
-
-  _.forEach(fonts, (url, name) => {
-    promises.push(new Promise((resolve, reject) => {
-      request({
-        url,
-        encoding: null,
-      })
-        .then((body) => {
-          resolve({
-            name,
-            font: body,
-          });
-        }, reject);
+  _.forEach(fonts, (url, id) => {
+    promises.push(new Promise(async (resolve, reject) => {
+      try {
+        result[id] = (await axios.get(url, { responseType: 'arraybuffer' })).data;
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
     }));
   });
 
-  Promise.settle(promises)
-    .then((results) => {
-      const fonts = {};
+  await Promise.settle(promises);
 
-      results.forEach((result) => {
-        fonts[result.value().name] = result.value().font;
-      });
+  return result;
+};
 
-      resolve({
-        fonts,
-      });
-    })
-    .catch(reject);
-});
-
-const getAssets = assets => new Promise((resolve, reject) => {
-  const promises = [];
-
-  _.forEach(assets, (url, key) => {
-    promises.push(new Promise((resolve, reject) => {
-      request({
-        url,
-        encoding: null,
-      })
-        .then((body) => {
-          resolve({
-            key,
-            asset: body,
-          });
-        }, reject);
-    }));
-  });
-
-  Promise.settle(promises)
-    .then((results) => {
-      const assets = {};
-
-      results.forEach((result) => {
-        assets[result.value().key] = result.value().asset;
-      });
-
-      resolve({
-        assets,
-      });
-    })
-    .catch(reject);
-});
-
-const addItem = (doc, obj, item, pi) => new Promise((resolve, reject) => {
+const addItem = async (config, doc, obj, item, pi) => {
   const cmd = Object.keys(item)[0];
   let args = item[cmd];
 
@@ -86,141 +39,119 @@ const addItem = (doc, obj, item, pi) => new Promise((resolve, reject) => {
       doc.switchToPage(pi);
       doc[cmd](...args);
 
-      resolve();
       return;
     }
 
-    const imagePath = [_publicDir, obj.slug, args[0]].join('/');
+    let imagePath = `${obj.slug}/${args[0]}`;
 
-    const image = sharp(imagePath);
-    image.max();
-    image.resize(1500, 1000);
-    image.jpeg({
-      quality: 80,
-    });
-    image.withMetadata();
-    image.toBuffer()
-      .then((buffer) => {
-        args[0] = buffer;
+    imagePath = imagePath.replace(`${obj.slug}/${obj.slug}`, obj.slug);
 
-        doc.switchToPage(pi);
-        doc[cmd](...args);
+    const url = `http://${config.bucket}.s3.amazonaws.com/${imagePath}`;
 
-        resolve();
-      }, reject);
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+
+    const buffer = await sharp(response.data)
+      .max()
+      .resize(1500, 1000)
+      .jpeg({
+        quality: 80,
+      })
+      .withMetadata()
+      .toBuffer();
+
+    args[0] = buffer;
+
+    doc.switchToPage(pi);
+    doc[cmd](...args);
 
     return;
   }
 
   doc.switchToPage(pi);
   doc[cmd](...args);
+};
 
-  resolve();
-});
+const addPage = (config, doc, obj, page, pi) => {
+  const items = page.map(item => addItem(config, doc, obj, item, pi));
 
-const addPage = (doc, obj, page, pi) => new Promise((resolve, reject) => {
-  const items = page.map(item => addItem(doc, obj, item, pi));
-
-  Promise.settle(items)
-    .then(resolve)
-    .catch(reject);
-});
+  return Promise.settle(items);
+};
 
 module.exports = ({
   app,
-  publicDir,
+  bucket,
 }) => {
-  _publicDir = publicDir;
+
+  const config = {
+    bucket,
+  };
 
   app.get('/:slug/pdf/test', (req, res) => {
     res.status(200).send(`<form method="POST" action="/${req.params.slug}/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>`);
   });
 
-  app.all('/:slug/pdf/download', (req, res) => {
-    let t = process.hrtime();
-    console.time('pdf generated');
+  app.all(
+    '/:slug/pdf/download',
+    asyncMiddleware(async (req, res) => {
+      // let t = process.hrtime();
+      console.time('pdf generated');
 
-    // const logInfo = Logger.info.bind(null, null, 'pdf')
-    const logError = Logger.error.bind(null, res, 'pdf');
+      // const logInfo = Logger.info.bind(null, null, 'pdf')
+      const logError = Logger.error.bind(null, res, 'pdf');
 
-    let obj;
+      let obj;
 
-    try {
-      obj = JSON.parse(req.body.payload);
-    } catch (error) {
-      logError(`JSON Parse Error: ${req.body.payload}`);
-      return;
-    }
+      try {
+        obj = JSON.parse(req.body.payload);
+      } catch (error) {
+        logError(`JSON Parse Error: ${req.body.payload}`);
+        return;
+      }
 
-    if (!obj.pages) {
-      logError('No pages');
-      return;
-    }
+      if (!obj.pages) {
+        logError('No pages');
+        return;
+      }
 
-    obj.slug = req.params.slug;
-    obj.bufferPages = true;
+      obj.slug = req.params.slug;
+      obj.bufferPages = true;
 
-    const doc = new PDFDocument(obj);
+      const doc = new PDFDocument(obj);
 
-    const promises = [];
+      if (obj.fonts) {
+        obj.fonts = await getUrls(obj.fonts);
 
-    if (obj.fonts) {
-      promises.push(getFonts(obj.fonts));
-    }
-
-    if (obj.assets) {
-      promises.push(getAssets(obj.assets));
-    }
-
-    Promise.settle(promises)
-      .then((results) => {
-        obj.fonts = {};
-        obj.assets = {};
-
-        results.forEach((result) => {
-          if (result.isFulfilled()) {
-            const value = result.value();
-
-            if (value.fonts) {
-              obj.fonts = value.fonts;
-
-              _.forEach(value.fonts, (font, fontName) => {
-                doc.registerFont(fontName, font);
-              });
-            }
-
-            if (value.assets) {
-              obj.assets = value.assets;
-            }
-          }
+        _.forEach(obj.fonts, (font, fontName) => {
+          doc.registerFont(fontName, font);
         });
+      }
 
-        _.times(obj.pages.length - 1, () => {
-          doc.addPage();
-        });
+      if (obj.assets) {
+        obj.assets = await getUrls(obj.assets);
+      }
 
-        const pages = obj.pages.map((page, pi) => addPage(doc, obj, page, pi));
+      _.times(obj.pages.length - 1, () => {
+        doc.addPage();
+      });
 
-        Promise.settle(pages)
-          .then(() => {
-            res.status(200);
+      const pages = obj.pages.map((page, pi) => addPage(config, doc, obj, page, pi));
 
-            res.attachment(obj.fileName || 'download.pdf');
+      await Promise.settle(pages);
 
-            doc.pipe(res);
+      res.status(200);
+      res.attachment(obj.fileName || 'download.pdf');
 
-            doc.end();
+      doc.pipe(res);
+      doc.end();
 
-            obj = null;
+      obj = null;
 
-            t = process.hrtime(t);
-            t = `${(t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2)}ms`;
+      // t = process.hrtime(t);
+      // t = `${(t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2)}ms`;
 
-            // logInfo('generated in ' + t)
-            console.timeEnd('pdf generated');
-          }, logError)
-          .catch(logError);
-      }, logError)
-      .catch(logError);
-  });
+      // logInfo('generated in ' + t)
+      console.timeEnd('pdf generated');
+    })
+  );
+
 };

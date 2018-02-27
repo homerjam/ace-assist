@@ -16,23 +16,23 @@ module.exports = ({
       });
   });
 
-  app.get('/:slug/image/palette', (req, res) => {
-    const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
+  // app.get('/:slug/image/palette', (req, res) => {
+  //   const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
-    attention(filePath)
-      .palette((err, palette) => {
-        res.status(err ? 500 : 200).send(err || palette);
-      });
-  });
+  //   attention(filePath)
+  //     .palette((err, palette) => {
+  //       res.status(err ? 500 : 200).send(err || palette);
+  //     });
+  // });
 
-  app.get('/:slug/image/focus-point', (req, res) => {
-    const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
+  // app.get('/:slug/image/focus-point', (req, res) => {
+  //   const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
-    attention(filePath)
-      .point((err, point) => {
-        res.status(err ? 500 : 200).send(err || point);
-      });
-  });
+  //   attention(filePath)
+  //     .point((err, point) => {
+  //       res.status(err ? 500 : 200).send(err || point);
+  //     });
+  // });
 
   // app.get('/:slug/image/focus-region', (req, res) => {
   //   fs.readFileAsync(path.join(publicDir, req.params.slug, req.query.image || req.query.fileName))
@@ -51,12 +51,12 @@ module.exports = ({
   //     })
   // })
 
-  app.get('/:slug/image/focus/region', (req, res) => {
-    const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
+  // app.get('/:slug/image/focus/region', (req, res) => {
+  //   const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
-    attention(filePath)
-      .region((err, region) => {
-        res.status(err ? 500 : 200).send(err || region);
-      });
-  });
+  //   attention(filePath)
+  //     .region((err, region) => {
+  //       res.status(err ? 500 : 200).send(err || region);
+  //     });
+  // });
 };

@@ -160,12 +160,6 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 
 ### OSX Dependencies
 
-    # xcode tools (required for attention)
-    $ xcode-select --install
-
-	# opencv (for face detection)
-	$ brew install opencv
-
 	# libvips
 	$ brew install homebrew/science/vips --with-imagemagick --with-webp
 

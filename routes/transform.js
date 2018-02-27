@@ -1,10 +1,9 @@
 const _ = require('lodash');
-const Promise = require('bluebird');
 const sharp = require('sharp');
-const request = require('request');
-// const cv = require('opencv');
+const axios = require('axios');
 const si = require('systeminformation');
 const Logger = require('../lib/logger');
+const asyncMiddleware = require('../lib/async-middleware');
 
 const MIN_AVAIL_MEM = 64000000;
 
@@ -16,8 +15,6 @@ const mimeTypes = {
   gif: 'image/gif',
   svg: 'image/jpeg',
 };
-
-let _publicDir;
 
 /*
 
@@ -37,172 +34,126 @@ Convert format eg. jpg -> png: [filename].jpg.png
 
 */
 
-const transform = (settings, streamOrPath) => new Promise((resolve, reject) => {
-  const image = sharp(streamOrPath);
+const transform = async (input, settings) => {
+  const image = sharp(input);
 
-  image.metadata()
-    .then((metadata) => {
-      const width = metadata.width;
-      const height = metadata.height;
+  const metadata = await image.metadata();
 
-      try {
-        if (settings.sh) {
-          if (_.isArray(settings.sh)) {
-            const args = settings.sh.map(arg => Number(arg));
-            image.sharpen(...args);
+  const width = metadata.width;
+  const height = metadata.height;
+
+  if (settings.sh) {
+    if (_.isArray(settings.sh)) {
+      const args = settings.sh.map(arg => Number(arg));
+      image.sharpen(...args);
+    }
+    if (_.isString(settings.sh)) {
+      switch (settings.sh.toLowerCase()) {
+        case 'kirpan':
+          image.sharpen(1, 0.4, 0.6);
+          break;
+        case 'default':
+          image.sharpen();
+          break;
+        default:
+          if (Number(settings.sh) >= 0.5) {
+            image.sharpen(Number(settings.sh));
           }
-          if (_.isString(settings.sh)) {
-            switch (settings.sh.toLowerCase()) {
-              case 'kirpan':
-                image.sharpen(1, 0.4, 0.6);
-                break;
-              case 'default':
-                image.sharpen();
-                break;
-              default:
-                if (Number(settings.sh) >= 0.5) {
-                  image.sharpen(Number(settings.sh));
-                }
-                break;
-            }
-          }
-        }
-
-        if (settings.bl && Number(settings.bl) >= 0.3) {
-          image.blur(Number(settings.bl));
-        }
-
-        if (settings.x && settings.y && settings.x2 && settings.y2) {
-          settings.x = Number(settings.x);
-          settings.y = Number(settings.y);
-          settings.x2 = Number(settings.x2);
-          settings.y2 = Number(settings.y2);
-
-          if (settings.x <= 1) {
-            settings.x = Math.round(width * settings.x);
-          }
-          if (settings.y <= 1) {
-            settings.y = Math.round(height * settings.y);
-          }
-          if (settings.x2 <= 1) {
-            settings.x2 = Math.round(width * settings.x2);
-          }
-          if (settings.y2 <= 1) {
-            settings.y2 = Math.round(height * settings.y2);
-          }
-
-          image.extract({
-            left: settings.x,
-            top: settings.y,
-            width: settings.x2 - settings.x,
-            height: settings.y2 - settings.y,
-          });
-        }
-
-        if (settings.w || settings.h) {
-          if (settings.w && Number(settings.w) <= 1) {
-            settings.w *= (width / 100);
-          }
-
-          if (settings.h && Number(settings.h) <= 1) {
-            settings.h *= (height / 100);
-          }
-
-          const interpolator = settings.w > 300 || settings.h > 200 ? 'bicubic' : 'vertexSplitQuadraticBasisSpline';
-
-          if (!(settings.sm && /fill|cover/i.test(settings.sm)) || settings.g) {
-            image.max();
-          }
-
-          const newWidth = parseInt(settings.w, 10) || null;
-          const newHeight = parseInt(settings.h, 10) || null;
-
-          image.resize(newWidth, newHeight, {
-            interpolator: sharp.interpolator[interpolator],
-          });
-
-          if (settings.w && settings.h && settings.g) {
-            const g = settings.g.toLowerCase();
-
-            if (/^(north|northeast|east|southeast|south|southwest|west|northwest|center|centre)$/.test(g)) {
-              image.crop(sharp.gravity[g]);
-            }
-            if (/^(entropy|attention)$/.test(g)) {
-              image.crop(sharp.strategy[g]);
-            }
-          }
-        }
-
-        if (settings.f && mimeTypes[settings.f]) {
-          settings.outputFormat = settings.f;
-        }
-
-        if (settings.outputFormat === 'png') {
-          image.png();
-
-        } else if (settings.outputFormat === 'webp') {
-          image.webp({
-            quality: parseInt(settings.q || 100, 10),
-          });
-
-        } else {
-          image.jpeg({
-            quality: parseInt(settings.q || 100, 10),
-            progressive: true,
-          });
-        }
-
-        image.withMetadata();
-
-      } catch (error) {
-        return reject(error);
+          break;
       }
-
-      return image.toBuffer()
-        .then(resolve)
-        .catch(reject);
-    })
-    .catch(reject);
-});
-
-const sendResult = (res, options, buffer) => {
-  if (res.finished) {
-    return;
+    }
   }
 
-  options.time = process.hrtime(options.time);
-  options.time = `${(options.time[0] === 0 ? '' : options.time[0]) + (options.time[1] / 1000 / 1000).toFixed(2)}ms`;
+  if (settings.bl && Number(settings.bl) >= 0.3) {
+    image.blur(Number(settings.bl));
+  }
 
-  // logInfo(options.time)
-  console.timeEnd(options.logPrefix);
+  if (settings.x && settings.y && settings.x2 && settings.y2) {
+    settings.x = Number(settings.x);
+    settings.y = Number(settings.y);
+    settings.x2 = Number(settings.x2);
+    settings.y2 = Number(settings.y2);
 
-  res.set('Content-Type', mimeTypes[options.settings.outputFormat]);
-  res.set('Last-Modified', new Date(0).toUTCString());
-  res.set('Cache-Tag', options.settings.slug);
-  res.set('X-Time-Elapsed', options.time);
+    if (settings.x <= 1) {
+      settings.x = Math.round(width * settings.x);
+    }
+    if (settings.y <= 1) {
+      settings.y = Math.round(height * settings.y);
+    }
+    if (settings.x2 <= 1) {
+      settings.x2 = Math.round(width * settings.x2);
+    }
+    if (settings.y2 <= 1) {
+      settings.y2 = Math.round(height * settings.y2);
+    }
 
-  res.status(200).send(buffer);
-
-  buffer = null;
-
-  try {
-    si.mem((mem) => {
-      if (mem.available < MIN_AVAIL_MEM) {
-        global.gc();
-      }
+    image.extract({
+      left: settings.x,
+      top: settings.y,
+      width: settings.x2 - settings.x,
+      height: settings.y2 - settings.y,
     });
-  } catch (error) {
-    console.error('Couldn\'t collect garbage, please run with --expose-gc option');
   }
+
+  if (settings.w || settings.h) {
+    if (settings.w && Number(settings.w) <= 1) {
+      settings.w *= (width / 100);
+    }
+
+    if (settings.h && Number(settings.h) <= 1) {
+      settings.h *= (height / 100);
+    }
+
+
+    if (!(settings.sm && /fill|cover/i.test(settings.sm)) || settings.g) {
+      image.max();
+    }
+
+    const newWidth = parseInt(settings.w, 10) || null;
+    const newHeight = parseInt(settings.h, 10) || null;
+
+    image.resize(newWidth, newHeight);
+
+    if (settings.w && settings.h && settings.g) {
+      const g = settings.g.toLowerCase();
+
+      if (/^(north|northeast|east|southeast|south|southwest|west|northwest|center|centre)$/.test(g)) {
+        image.crop(sharp.gravity[g]);
+      }
+      if (/^(entropy|attention)$/.test(g)) {
+        image.crop(sharp.strategy[g]);
+      }
+    }
+  }
+
+  if (settings.f && mimeTypes[settings.f]) {
+    settings.outputFormat = settings.f;
+  }
+
+  if (settings.outputFormat === 'png') {
+    image.png();
+
+  } else if (settings.outputFormat === 'webp') {
+    image.webp({
+      quality: parseInt(settings.q || 100, 10),
+    });
+
+  } else {
+    image.jpeg({
+      quality: parseInt(settings.q || 100, 10),
+      progressive: true,
+    });
+  }
+
+  image.withMetadata();
+
+  const buffer = await image.toBuffer();
+
+  return buffer;
 };
 
-const handleRequest = (req, res) => {
-  if (res.finished) {
-    return;
-  }
-
+const transformHandler = async ({ bucket }, req, res) => {
   const mode = req.params.fileName ? 'local' : 'proxy';
-
   let settings = {};
   let options;
   let useQuery;
@@ -271,7 +222,8 @@ const handleRequest = (req, res) => {
     const fileNameParts = req.params.fileName.split('.');
     const fileName = fileNameParts.length > 2 ? fileNameParts.slice(0, fileNameParts.length - 1).join('.') : req.params.fileName;
 
-    file = [_publicDir, slug, fileName].join('/');
+    file = `${slug}/${fileName}`;
+
     settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
   }
 
@@ -291,80 +243,59 @@ const handleRequest = (req, res) => {
   }
 
   const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
-  const time = process.hrtime();
-
-  console.time(logPrefix);
-
   // const logInfo = Logger.info.bind(null, null, logPrefix);
   const logError = Logger.error.bind(null, res, logPrefix);
 
-  const sendResultHandler = sendResult.bind(null, res, {
-    logPrefix,
-    time,
-    settings,
-  });
+  try {
+    let time = process.hrtime();
 
-  const transformHandler = transform.bind(null, settings);
+    const url = mode === 'local' ? `http://${bucket}.s3.amazonaws.com/${file}` : `http://${file}`;
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
 
-  if (mode === 'local') {
-    // if (settings.g !== undefined && /face/i.test(settings.g)) {
-    //   cv.readImage(file, (error, mat) => {
-    //     if (error) {
-    //       return logError(error);
-    //     }
+    let buffer = await transform(response.data, settings);
 
-    //     return mat.detectObject(cv.FACE_CASCADE, {}, (error, faces) => {
-    //       if (error) {
-    //         logError(error);
-    //         return;
-    //       }
+    time = process.hrtime(time);
+    time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
 
-    //       transformHandler(mat.toBuffer(), {
-    //         faces,
-    //       })
-    //         .then(sendResultHandler, logError)
-    //         .catch(logError);
-    //     });
-    //   });
+    res.set('Content-Type', mimeTypes[settings.outputFormat]);
+    res.set('Last-Modified', new Date(0).toUTCString());
+    res.set('Cache-Tag', settings.slug);
+    res.set('X-Time-Elapsed', time);
 
-    //   return;
-    // }
+    res.status(200);
+    res.send(buffer);
 
-    transformHandler(file)
-      .then(sendResultHandler, logError)
-      .catch(logError);
+    buffer = null;
+
+  } catch (error) {
+    console.error(error);
+    logError(error);
   }
 
-  if (mode === 'proxy') {
-    request({
-      method: 'GET',
-      url: `http://${file}`,
-      encoding: null,
-    }, (error, response, body) => {
-      if (error) {
-        logError(error);
-        return;
+  try {
+    si.mem((mem) => {
+      if (mem.available < MIN_AVAIL_MEM) {
+        global.gc();
       }
-
-      transformHandler(body)
-        .then(sendResultHandler, logError)
-        .catch(logError);
     });
+  } catch (error) {
+    console.error('Couldn\'t collect garbage, please run with --expose-gc option');
   }
 };
 
 module.exports = ({
   app,
-  publicDir,
+  bucket,
 }) => {
-  _publicDir = publicDir;
 
-  app.get('/:slug/proxy/transform/*', handleRequest);
+  const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, { bucket }));
 
-  app.get('/:slug/transform/:options/:fileName/:originalFileName', handleRequest);
+  app.get('/:slug/proxy/transform/*', transformHandlerAsync);
 
-  app.get('/:slug/transform/:options/:fileName', handleRequest);
+  app.get('/:slug/transform/:options/:fileName/:originalFileName', transformHandlerAsync);
 
-  app.get('/:slug/transform/:fileName', handleRequest);
+  app.get('/:slug/transform/:options/:fileName', transformHandlerAsync);
+
+  app.get('/:slug/transform/:fileName', transformHandlerAsync);
 
 };
