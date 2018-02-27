@@ -6,9 +6,11 @@ const uuid = require('uuid');
 const mime = require('mime');
 // const Glob = require('glob').Glob;
 const rimrafAsync = Promise.promisify(require('rimraf'));
+const duAsync = Promise.promisify(require('du'));
 const recursive = require('recursive-readdir');
 const Logger = require('../lib/logger');
 const Image = require('../lib/image');
+const Video = require('../lib/video');
 const Flow = require('../lib/flow');
 const S3 = require('../lib/s3');
 const asyncMiddleware = require('../lib/async-middleware');
@@ -86,15 +88,28 @@ module.exports = ({
         let metadata = {};
 
         if (/^(image)\/(.+)$/.test(mimeType)) {
-          metadata = await Image.processImage(tmpFile);
+          metadata = await Image.process(tmpFile);
 
           if (options.dzi) {
             metadata.dzi = await Image.dzi(tmpFile, options.dzi);
           }
         }
 
+        if (/^(video)\/(.+)$/.test(mimeType)) {
+          metadata = await Video.process(tmpFile);
+        }
+
         const extrasPath = path.join(uploadDir, path.parse(tmpFile).name);
-        const extrasFiles = await recursive(extrasPath);
+
+        let extrasFiles = [];
+        let extrasSize = 0;
+
+        try {
+          extrasFiles = await recursive(extrasPath);
+          extrasSize = await duAsync(extrasPath, { disk: true });
+        } catch (error) {
+          //
+        }
 
         const extraObjects = extrasFiles.map(file => ({
           file,
@@ -108,9 +123,12 @@ module.exports = ({
 
         const result = results[0];
 
+        const size = result.original.fileSize + extrasSize;
+
         result.file = {
           name,
           ext,
+          size,
         };
         result.original.fileName = upload.originalFilename;
         result.metadata = metadata;

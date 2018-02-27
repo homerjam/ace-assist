@@ -1,159 +1,15 @@
 const _ = require('lodash');
-const sharp = require('sharp');
 const axios = require('axios');
 const si = require('systeminformation');
+const Image = require('../lib/image');
 const Logger = require('../lib/logger');
 const asyncMiddleware = require('../lib/async-middleware');
 
 const MIN_AVAIL_MEM = 64000000;
 
-const mimeTypes = {
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
-  gif: 'image/gif',
-  svg: 'image/jpeg',
-};
-
-/*
-
-Usage:
-
-q - quality
-sh - sharpen
-bl - blur
-g - gravity [north|south|east|west|center|entropy|attention|face]
-x,y,x2,y2 - crop coords
-w - width [pixels (< 1: percent)]
-h - height [pixels (< 1: percent)]
-sm - scale mode [fit/contain|fill/cover]
-f - output format [jpg/png/webp]
-
-Convert format eg. jpg -> png: [filename].jpg.png
-
-*/
-
-const transform = async (input, settings) => {
-  const image = sharp(input);
-
-  const metadata = await image.metadata();
-
-  const width = metadata.width;
-  const height = metadata.height;
-
-  if (settings.sh) {
-    if (_.isArray(settings.sh)) {
-      const args = settings.sh.map(arg => Number(arg));
-      image.sharpen(...args);
-    }
-    if (_.isString(settings.sh)) {
-      switch (settings.sh.toLowerCase()) {
-        case 'kirpan':
-          image.sharpen(1, 0.4, 0.6);
-          break;
-        case 'default':
-          image.sharpen();
-          break;
-        default:
-          if (Number(settings.sh) >= 0.5) {
-            image.sharpen(Number(settings.sh));
-          }
-          break;
-      }
-    }
-  }
-
-  if (settings.bl && Number(settings.bl) >= 0.3) {
-    image.blur(Number(settings.bl));
-  }
-
-  if (settings.x && settings.y && settings.x2 && settings.y2) {
-    settings.x = Number(settings.x);
-    settings.y = Number(settings.y);
-    settings.x2 = Number(settings.x2);
-    settings.y2 = Number(settings.y2);
-
-    if (settings.x <= 1) {
-      settings.x = Math.round(width * settings.x);
-    }
-    if (settings.y <= 1) {
-      settings.y = Math.round(height * settings.y);
-    }
-    if (settings.x2 <= 1) {
-      settings.x2 = Math.round(width * settings.x2);
-    }
-    if (settings.y2 <= 1) {
-      settings.y2 = Math.round(height * settings.y2);
-    }
-
-    image.extract({
-      left: settings.x,
-      top: settings.y,
-      width: settings.x2 - settings.x,
-      height: settings.y2 - settings.y,
-    });
-  }
-
-  if (settings.w || settings.h) {
-    if (settings.w && Number(settings.w) <= 1) {
-      settings.w *= (width / 100);
-    }
-
-    if (settings.h && Number(settings.h) <= 1) {
-      settings.h *= (height / 100);
-    }
-
-
-    if (!(settings.sm && /fill|cover/i.test(settings.sm)) || settings.g) {
-      image.max();
-    }
-
-    const newWidth = parseInt(settings.w, 10) || null;
-    const newHeight = parseInt(settings.h, 10) || null;
-
-    image.resize(newWidth, newHeight);
-
-    if (settings.w && settings.h && settings.g) {
-      const g = settings.g.toLowerCase();
-
-      if (/^(north|northeast|east|southeast|south|southwest|west|northwest|center|centre)$/.test(g)) {
-        image.crop(sharp.gravity[g]);
-      }
-      if (/^(entropy|attention)$/.test(g)) {
-        image.crop(sharp.strategy[g]);
-      }
-    }
-  }
-
-  if (settings.f && mimeTypes[settings.f]) {
-    settings.outputFormat = settings.f;
-  }
-
-  if (settings.outputFormat === 'png') {
-    image.png();
-
-  } else if (settings.outputFormat === 'webp') {
-    image.webp({
-      quality: parseInt(settings.q || 100, 10),
-    });
-
-  } else {
-    image.jpeg({
-      quality: parseInt(settings.q || 100, 10),
-      progressive: true,
-    });
-  }
-
-  image.withMetadata();
-
-  const buffer = await image.toBuffer();
-
-  return buffer;
-};
-
 const transformHandler = async ({ bucket }, req, res) => {
   const mode = req.params.fileName ? 'local' : 'proxy';
+
   let settings = {};
   let options;
   let useQuery;
@@ -242,35 +98,40 @@ const transformHandler = async ({ bucket }, req, res) => {
     settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
+  const url = mode === 'local' ? `http://${bucket}.s3.amazonaws.com/${file}` : `http://${file}`;
+
   const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
   // const logInfo = Logger.info.bind(null, null, logPrefix);
   const logError = Logger.error.bind(null, res, logPrefix);
 
+  let time = process.hrtime();
+
+  let buffer;
+
+  // TODO: check and use filru cache using url/settings as key
+  // for video use 'touch' to create empty key/placeholder and overwrite
+  // if zero bytes then serve encoding in progress video
+
   try {
-    let time = process.hrtime();
-
-    const url = mode === 'local' ? `http://${bucket}.s3.amazonaws.com/${file}` : `http://${file}`;
-    const response = await axios.get(url, { responseType: 'arraybuffer' });
-
-    let buffer = await transform(response.data, settings);
-
-    time = process.hrtime(time);
-    time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
-
-    res.set('Content-Type', mimeTypes[settings.outputFormat]);
-    res.set('Last-Modified', new Date(0).toUTCString());
-    res.set('Cache-Tag', settings.slug);
-    res.set('X-Time-Elapsed', time);
-
-    res.status(200);
-    res.send(buffer);
-
-    buffer = null;
-
+    buffer = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
   } catch (error) {
     console.error(error);
     logError(error);
   }
+
+  time = process.hrtime(time);
+  time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
+
+  res.set('Content-Type', Image.mimeTypes[settings.outputFormat]);
+
+  res.set('Last-Modified', new Date(0).toUTCString());
+  res.set('Cache-Tag', settings.slug);
+  res.set('X-Time-Elapsed', time);
+
+  res.status(200);
+  res.send(buffer);
+
+  buffer = null;
 
   try {
     si.mem((mem) => {

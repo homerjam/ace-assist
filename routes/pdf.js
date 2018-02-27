@@ -44,6 +44,7 @@ const addItem = async (config, doc, obj, item, pi) => {
 
     let imagePath = `${obj.slug}/${args[0]}`;
 
+    // Force use of 'master' slug
     imagePath = imagePath.replace(`${obj.slug}/${obj.slug}`, obj.slug);
 
     const url = `http://${config.bucket}.s3.amazonaws.com/${imagePath}`;
