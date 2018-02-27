@@ -24,7 +24,10 @@ const EMAIL = process.env.EMAIL || '';
 const DOMAINS = process.env.DOMAINS || '';
 const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
-let PUBLIC_FOLDER = process.env.PUBLIC_FOLDER || 'public';
+const PUBLIC_FOLDER = process.env.PUBLIC_FOLDER || 'public';
+const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
+const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
+const BUCKET = process.env.BUCKET;
 
 passport.use(new BasicStrategy(
   {
@@ -60,28 +63,6 @@ app.use(expires({
 }));
 app.use(passport.initialize());
 
-if (ENVIRONMENT === 'testing') {
-  app.use('/tests', express.static(path.join(__dirname, 'tests')));
-  PUBLIC_FOLDER = 'tests';
-}
-
-app.set('logDir', path.join(__dirname, 'log'));
-app.set('uploadDir', path.join(__dirname, 'uploads'));
-
-if (/^\/(.*)$/.test(PUBLIC_FOLDER)) {
-  app.set('publicDir', PUBLIC_FOLDER);
-} else {
-  app.set('publicDir', path.join(__dirname, PUBLIC_FOLDER));
-}
-
-if (!fs.existsSync(app.get('publicDir'))) {
-  fs.mkdirSync(app.get('publicDir'));
-}
-
-if (!fs.existsSync(app.get('uploadDir'))) {
-  fs.mkdirSync(app.get('uploadDir'));
-}
-
 app.use((req, res, next) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -97,20 +78,39 @@ app.use((req, res, next) => {
   return next();
 });
 
-const isAuthorised = (req, res, next) => {
+const authMiddleware = (req, res, next) => {
   passport.authenticate('basic', {
     session: false,
   })(req, res, next);
 };
 
-require('./routes/file')(app, isAuthorised);
-require('./routes/log')(app, isAuthorised);
-require('./routes/transform')(app, isAuthorised);
-require('./routes/pdf')(app, isAuthorised);
-require('./routes/utils')(app, isAuthorised);
-require('./routes/image')(app, isAuthorised);
+const config = {
+  app,
+  authMiddleware,
+  logDir: path.join(__dirname, 'log'),
+  uploadDir: path.join(__dirname, 'uploads'),
+  publicDir: /^\/(.*)$/.test(PUBLIC_FOLDER) ? PUBLIC_FOLDER : path.join(__dirname, PUBLIC_FOLDER),
+  accessKeyId: ACCESS_KEY_ID,
+  secretAccessKey: SECRET_ACCESS_KEY,
+  bucket: BUCKET,
+};
 
-app.use(express.static(app.get('publicDir')));
+if (!fs.existsSync(config.publicDir)) {
+  fs.mkdirSync(config.publicDir);
+}
+
+if (!fs.existsSync(config.uploadDir)) {
+  fs.mkdirSync(config.uploadDir);
+}
+
+require('./routes/file')(config);
+require('./routes/log')(config);
+require('./routes/transform')(config);
+require('./routes/pdf')(config);
+require('./routes/utils')(config);
+require('./routes/image')(config);
+
+app.use(express.static(config.publicDir));
 
 app.get('/', (req, res) => {
   res.send(`
@@ -126,10 +126,10 @@ app.get('/', (req, res) => {
   `);
 });
 
-// app.get('/robots.txt', function (req, res) {
-//   res.type('text/plain');
-//   res.send('User-agent: *\nDisallow: /');
-// });
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send('User-agent: *\nDisallow:');
+});
 
 if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';
@@ -149,20 +149,19 @@ if (ENVIRONMENT !== 'development') {
     debug,
   });
 
-  http.createServer(lex.middleware(redirectHttps())).listen(HTTP_PORT, function () {
+  http.createServer(lex.middleware(redirectHttps())).listen(HTTP_PORT, function createServer() {
     console.log('Listening for ACME http-01 challenges on', this.address());
   });
 
-  https.createServer(lex.httpsOptions, lex.middleware(app)).listen(HTTPS_PORT, function () {
+  https.createServer(lex.httpsOptions, lex.middleware(app)).listen(HTTPS_PORT, function createServer() {
     console.log('Listening for ACME tls-sni-01 challenges and serve app on', this.address());
   });
-
 }
 
 if (ENVIRONMENT === 'development') {
   const httpServer = http.createServer(app);
   httpServer.on('listening', () => {
-    console.log('Express server listening on port ' + HTTP_PORT);
+    console.log(`Express server listening on port ${HTTP_PORT}`);
   });
   httpServer.listen(HTTP_PORT);
 }

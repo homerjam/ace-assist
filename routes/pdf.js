@@ -5,7 +5,7 @@ const PDFDocument = require('pdfkit');
 const sharp = require('sharp');
 const Logger = require('../lib/logger');
 
-let publicDir;
+let _publicDir;
 
 const getFonts = fonts => new Promise((resolve, reject) => {
   const promises = [];
@@ -90,7 +90,7 @@ const addItem = (doc, obj, item, pi) => new Promise((resolve, reject) => {
       return;
     }
 
-    const imagePath = [publicDir, obj.slug, args[0]].join('/');
+    const imagePath = [_publicDir, obj.slug, args[0]].join('/');
 
     const image = sharp(imagePath);
     image.max();
@@ -126,11 +126,14 @@ const addPage = (doc, obj, page, pi) => new Promise((resolve, reject) => {
     .catch(reject);
 });
 
-module.exports = (app) => {
-  publicDir = app.get('publicDir');
+module.exports = ({
+  app,
+  publicDir,
+}) => {
+  _publicDir = publicDir;
 
   app.get('/:slug/pdf/test', (req, res) => {
-    res.status(200).send('<form method="POST" action="/' + req.params.slug + '/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>');
+    res.status(200).send(`<form method="POST" action="/${req.params.slug}/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>`);
   });
 
   app.all('/:slug/pdf/download', (req, res) => {
@@ -145,7 +148,7 @@ module.exports = (app) => {
     try {
       obj = JSON.parse(req.body.payload);
     } catch (error) {
-      logError('JSON Parse Error: ' + req.body.payload);
+      logError(`JSON Parse Error: ${req.body.payload}`);
       return;
     }
 
@@ -211,7 +214,7 @@ module.exports = (app) => {
             obj = null;
 
             t = process.hrtime(t);
-            t = (t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2) + 'ms';
+            t = `${(t[0] === 0 ? '' : t[0]) + (t[1] / 1000 / 1000).toFixed(2)}ms`;
 
             // logInfo('generated in ' + t)
             console.timeEnd('pdf generated');

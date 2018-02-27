@@ -17,7 +17,7 @@ const mimeTypes = {
   svg: 'image/jpeg',
 };
 
-let publicDir;
+let _publicDir;
 
 /*
 
@@ -171,7 +171,7 @@ const sendResult = (res, options, buffer) => {
   }
 
   options.time = process.hrtime(options.time);
-  options.time = (options.time[0] === 0 ? '' : options.time[0]) + (options.time[1] / 1000 / 1000).toFixed(2) + 'ms';
+  options.time = `${(options.time[0] === 0 ? '' : options.time[0]) + (options.time[1] / 1000 / 1000).toFixed(2)}ms`;
 
   // logInfo(options.time)
   console.timeEnd(options.logPrefix);
@@ -271,7 +271,7 @@ const handleRequest = (req, res) => {
     const fileNameParts = req.params.fileName.split('.');
     const fileName = fileNameParts.length > 2 ? fileNameParts.slice(0, fileNameParts.length - 1).join('.') : req.params.fileName;
 
-    file = [publicDir, slug, fileName].join('/');
+    file = [_publicDir, slug, fileName].join('/');
     settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
   }
 
@@ -283,14 +283,14 @@ const handleRequest = (req, res) => {
 
       const qs = req.originalUrl.split('?')[1];
       if (qs) {
-        file = file + '?' + qs;
+        file = `${file}?${qs}`;
       }
     }
 
     settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
-  const logPrefix = req.originalUrl + ' ' + JSON.stringify(settings);
+  const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
   const time = process.hrtime();
 
   console.time(logPrefix);
@@ -338,7 +338,7 @@ const handleRequest = (req, res) => {
   if (mode === 'proxy') {
     request({
       method: 'GET',
-      url: 'http://' + file,
+      url: `http://${file}`,
       encoding: null,
     }, (error, response, body) => {
       if (error) {
@@ -353,8 +353,11 @@ const handleRequest = (req, res) => {
   }
 };
 
-module.exports = (app) => {
-  publicDir = app.get('publicDir');
+module.exports = ({
+  app,
+  publicDir,
+}) => {
+  _publicDir = publicDir;
 
   app.get('/:slug/proxy/transform/*', handleRequest);
 
@@ -363,4 +366,5 @@ module.exports = (app) => {
   app.get('/:slug/transform/:options/:fileName', handleRequest);
 
   app.get('/:slug/transform/:fileName', handleRequest);
+
 };

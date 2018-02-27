@@ -15,7 +15,7 @@
     "start": "nodemon --expose-gc index.js"
   },
   "dependencies": {
-    "attention": "^0.1.1",
+    "aws-sdk": "^2.202.0",
     "batch": "^0.6.1",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
@@ -54,8 +54,13 @@
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
     "rimraf": "^2.6.2",
-    "sharp": "^0.18.4",
+    "sharp": "^0.19.1",
     "systeminformation": "^3.33.18",
     "uuid": "^3.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.18.1",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.9.0"
   }
 }

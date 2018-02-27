@@ -1,6 +1,7 @@
 .env
 .helpers
 .DS_Store
+.vscode
 nodemon.json
 node_modules
 public

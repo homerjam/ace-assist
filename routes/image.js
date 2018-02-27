@@ -1,10 +1,11 @@
 const path = require('path');
 const sharp = require('sharp');
-const attention = require('attention');
 // const smartcrop = require('smartcrop-sharp');
 
-module.exports = (app) => {
-  const publicDir = app.get('publicDir');
+module.exports = ({
+  app,
+  publicDir,
+}) => {
 
   app.get('/:slug/image/metadata', (req, res) => {
     const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);

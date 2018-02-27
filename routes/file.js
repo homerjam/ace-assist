@@ -8,17 +8,25 @@ const rimrafAsync = Promise.promisify(require('rimraf'));
 const Logger = require('../lib/logger');
 const Image = require('../lib/image');
 const Flow = require('../lib/flow');
+const S3 = require('../lib/s3');
+const asyncMiddleware = require('../lib/async-middleware');
 
-module.exports = function (app, isAuthorised) {
-  const uploadDir = app.get('uploadDir');
-  const publicDir = app.get('publicDir');
+module.exports = ({
+  app,
+  authMiddleware,
+  uploadDir,
+  publicDir,
+  accessKeyId,
+  secretAccessKey,
+  bucket,
+}) => {
 
   app.options('/:slug/file/upload?*', (req, res) => {
     res.status(200);
     res.send();
   });
 
-  app.get('/:slug/file/upload?*', isAuthorised, (req, res) => {
+  app.get('/:slug/file/upload?*', authMiddleware, (req, res) => {
     const flow = new Flow(uploadDir);
 
     flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
@@ -31,72 +39,76 @@ module.exports = function (app, isAuthorised) {
       });
   });
 
-  app.post('/:slug/file/upload?*', isAuthorised, multiparty, (req, res) => {
-    const slug = req.params.slug;
+  app.post(
+    '/:slug/file/upload?*',
+    authMiddleware,
+    multiparty,
+    asyncMiddleware(async (req, res) => {
+      const slug = req.params.slug;
 
-    // const logInfo = Logger.info.bind(null, null, 'upload');
-    const logError = Logger.error.bind(null, res, 'upload');
+      const flow = new Flow(uploadDir);
 
-    const flow = new Flow(uploadDir);
+      let options = {};
 
-    let options = {};
+      try {
+        options = JSON.parse(req.body.options);
+      } catch (error) {
+        //
+      }
 
-    try {
-      options = JSON.parse(req.body.options);
-    } catch (error) {
-      //
-    }
+      const upload = await flow.saveChunk(req.files, req.body.flowChunkNumber, req.body.flowChunkSize, req.body.flowTotalChunks, req.body.flowTotalSize, req.body.flowIdentifier, req.body.flowFilename);
 
-    flow.saveChunk(req.files, req.body.flowChunkNumber, req.body.flowChunkSize, req.body.flowTotalChunks, req.body.flowTotalSize, req.body.flowIdentifier, req.body.flowFilename)
-      .then((uploadResult) => {
-        res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Origin', '*');
 
-        if (uploadResult.status !== 'complete') {
-          res.status(200);
-          res.send(uploadResult);
-          return;
+      if (upload.status !== 'complete') {
+        res.status(200);
+        res.send(upload);
+        return;
+      }
+
+      const tmpFile = path.join(uploadDir, upload.filename);
+
+      try {
+        const s3 = new S3(accessKeyId, secretAccessKey, bucket);
+
+        const base = uuid.v1();
+
+        const objects = [
+          {
+            file: tmpFile,
+            key: `${slug}/${base}${path.parse(tmpFile).ext}`,
+          },
+        ];
+
+        let metadata = {};
+
+        if (/^(image)$/.test(options.type)) {
+          metadata = await Image.processImage(tmpFile);
+
+          if (options.dzi) {
+            metadata.dzi = await Image.dzi(tmpFile, options.dzi);
+          }
         }
 
-        if (!fs.existsSync(path.join(publicDir, slug))) {
-          fs.mkdirSync(path.join(publicDir, slug));
-        }
+        const results = await Promise.all(objects.map(object => s3.upload(object.file, object.key, base)));
 
-        const filePath = path.join(uploadDir, uploadResult.filename);
-        const filePathOut = path.join(publicDir, slug, uuid.v1());
+        const result = results[0];
 
-        Image.processImage(filePath, filePathOut)
-          .then((metadata) => {
-            const info = {
-              fileName: metadata.fileName,
-              fileSize: metadata.size,
-              mimeType: metadata.mimeType,
-              location: 'assist',
-              mediaType: 'image',
-              original: {
-                fileName: uploadResult.originalFilename,
-              },
-              metadata: {
-                format: metadata.format.toUpperCase(),
-                width: metadata.width,
-                height: metadata.height,
-              },
-            };
+        result.original.fileName = upload.originalFilename;
+        result.metadata = metadata;
 
-            if (!options.dzi) {
-              res.status(200).send(info);
-              return;
-            }
+        // await Promise.all(objects.map(object => fs.unlinkAsync(object.file)));
 
-            Image.dzi(path.join(publicDir, slug, metadata.fileName), options.dzi)
-              .then((dzi) => {
-                info.dzi = dzi;
-                res.status(200).send(info);
-              }, logError);
-          }, logError);
-      }, logError);
-  });
+        res.status(200);
+        res.send(result);
 
-  app.delete('/:slug/file/delete', isAuthorised, (req, res) => {
+      } catch (error) {
+        Logger.error(res, 'upload', error);
+      }
+    })
+  );
+
+  app.delete('/:slug/file/delete', authMiddleware, (req, res) => {
     const slug = req.params.slug;
     const files = req.body.files;
 
@@ -106,7 +118,7 @@ module.exports = function (app, isAuthorised) {
     const deleteFiles = files.map(file => new Promise((resolve, reject) => {
       const name = path.parse(file).name;
 
-      const pattern = path.join(publicDir, slug, name) + '*';
+      const pattern = `${path.join(publicDir, slug, name)}*`;
 
       Glob(pattern, (error, _files) => {
         const _deleteFiles = _files.map((_fileOrDir) => {
@@ -131,4 +143,5 @@ module.exports = function (app, isAuthorised) {
     const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
     res.download(filePath, req.params.originalFileName);
   });
+
 };
