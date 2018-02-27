@@ -24,7 +24,7 @@ const EMAIL = process.env.EMAIL || '';
 const DOMAINS = process.env.DOMAINS || '';
 const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
-const PUBLIC_FOLDER = process.env.PUBLIC_FOLDER || 'public';
+const CACHE_MAX_SIZE = parseInt(process.env.CACHE_MAX_SIZE || 100, 10) * 1024 * 1024; // 100mb
 const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
 const BUCKET = process.env.BUCKET;
@@ -91,14 +91,15 @@ const config = {
   authMiddleware,
   logDir: path.join(__dirname, 'log'),
   uploadDir: path.join(__dirname, 'uploads'),
-  publicDir: /^\/(.*)$/.test(PUBLIC_FOLDER) ? PUBLIC_FOLDER : path.join(__dirname, PUBLIC_FOLDER),
+  cacheDir: path.join(__dirname, 'cache'),
+  cacheMaxSize: CACHE_MAX_SIZE,
   accessKeyId: ACCESS_KEY_ID,
   secretAccessKey: SECRET_ACCESS_KEY,
   bucket: BUCKET,
 };
 
-if (!fs.existsSync(config.publicDir)) {
-  fs.mkdirSync(config.publicDir);
+if (!fs.existsSync(config.cacheDir)) {
+  fs.mkdirSync(config.cacheDir);
 }
 
 if (!fs.existsSync(config.uploadDir)) {
@@ -112,7 +113,7 @@ require('./routes/pdf')(config);
 require('./routes/utils')(config);
 require('./routes/image')(config);
 
-app.use(express.static(config.publicDir));
+// app.use(express.static(config.publicDir)); // TODO: replace with proxy
 
 app.get('/', (req, res) => {
   res.send(`

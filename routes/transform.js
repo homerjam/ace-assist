@@ -1,11 +1,14 @@
 const _ = require('lodash');
 const axios = require('axios');
 const si = require('systeminformation');
+const Filru = require('filru');
 const Image = require('../lib/image');
 const Logger = require('../lib/logger');
 const asyncMiddleware = require('../lib/async-middleware');
 
-const MIN_AVAIL_MEM = 64000000;
+const MIN_AVAIL_MEM = 1024 * 1024 * 50; // 50 megabytes
+
+let filru;
 
 const transformHandler = async ({ bucket }, req, res) => {
   const mode = req.params.fileName ? 'local' : 'proxy';
@@ -100,6 +103,8 @@ const transformHandler = async ({ bucket }, req, res) => {
 
   const url = mode === 'local' ? `http://${bucket}.s3.amazonaws.com/${file}` : `http://${file}`;
 
+  const key = `[${url}](${JSON.stringify(settings)})`;
+
   const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
   // const logInfo = Logger.info.bind(null, null, logPrefix);
   const logError = Logger.error.bind(null, res, logPrefix);
@@ -107,26 +112,48 @@ const transformHandler = async ({ bucket }, req, res) => {
   let time = process.hrtime();
 
   let buffer;
+  let cachedResponse = false;
 
   // TODO: check and use filru cache using url/settings as key
   // for video use 'touch' to create empty key/placeholder and overwrite
   // if zero bytes then serve encoding in progress video
 
   try {
-    buffer = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
+    buffer = await filru.get(key);
   } catch (error) {
-    console.error(error);
-    logError(error);
+    if (error.code !== 'ENOENT') {
+      console.log(error);
+    }
+  }
+
+  if (!buffer) {
+    try {
+      buffer = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
+    } catch (error) {
+      if (_.get(error, 'response.status') !== 403) {
+        console.error(error.toString());
+      }
+      logError(error);
+      return;
+    }
+  } else {
+    cachedResponse = true;
+  }
+
+  try {
+    await filru.set(key, buffer);
+  } catch (error) {
+    console.log(error);
   }
 
   time = process.hrtime(time);
   time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
 
   res.set('Content-Type', Image.mimeTypes[settings.outputFormat]);
-
   res.set('Last-Modified', new Date(0).toUTCString());
   res.set('Cache-Tag', settings.slug);
   res.set('X-Time-Elapsed', time);
+  res.set('X-Cached-Response', cachedResponse);
 
   res.status(200);
   res.send(buffer);
@@ -147,7 +174,12 @@ const transformHandler = async ({ bucket }, req, res) => {
 module.exports = ({
   app,
   bucket,
+  cacheDir,
+  cacheMaxSize,
 }) => {
+
+  filru = new Filru(cacheDir, cacheMaxSize);
+  filru.start();
 
   const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, { bucket }));
 
