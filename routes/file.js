@@ -10,7 +10,7 @@ const duAsync = Promise.promisify(require('du'));
 const recursive = require('recursive-readdir');
 const Logger = require('../lib/logger');
 const Image = require('../lib/image');
-const Video = require('../lib/video');
+const AV = require('../lib/av');
 const Flow = require('../lib/flow');
 const S3 = require('../lib/s3');
 const asyncMiddleware = require('../lib/async-middleware');
@@ -18,7 +18,7 @@ const asyncMiddleware = require('../lib/async-middleware');
 module.exports = ({
   app,
   authMiddleware,
-  uploadDir,
+  tmpDir,
   accessKeyId,
   secretAccessKey,
   bucket,
@@ -30,7 +30,7 @@ module.exports = ({
   });
 
   app.get('/:slug/file/upload?*', authMiddleware, (req, res) => {
-    const flow = new Flow(uploadDir);
+    const flow = new Flow(tmpDir);
 
     flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
       .then(() => {
@@ -49,7 +49,7 @@ module.exports = ({
     asyncMiddleware(async (req, res) => {
       const slug = req.params.slug;
 
-      const flow = new Flow(uploadDir);
+      const flow = new Flow(tmpDir);
 
       let options = {};
 
@@ -69,7 +69,7 @@ module.exports = ({
         return;
       }
 
-      const tmpFile = path.join(uploadDir, upload.filename);
+      const tmpFile = path.join(tmpDir, upload.filename);
 
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
@@ -96,10 +96,10 @@ module.exports = ({
         }
 
         if (/^(video)\/(.+)$/.test(mimeType)) {
-          metadata = await Video.process(tmpFile);
+          metadata = await AV.process(tmpFile);
         }
 
-        const extrasPath = path.join(uploadDir, path.parse(tmpFile).name);
+        const extrasPath = path.join(tmpDir, path.parse(tmpFile).name);
 
         let extrasFiles = [];
         let extrasSize = 0;

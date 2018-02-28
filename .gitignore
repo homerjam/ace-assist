@@ -6,6 +6,6 @@ nodemon.json
 node_modules
 public
 cache
-uploads
+tmp
 tests
 typings

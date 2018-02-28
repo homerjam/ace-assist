@@ -166,6 +166,9 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
     # libvips from specific commit
     $ git clone git://github.com/jcupitt/libvips.git; cd libvips; git reset --hard <commit id>; gtkdocize; ./bootstrap.sh; cd ../; rm -Rf libvips;
 
+    # ffmpeg
+    $ brew install libvpx ffmpeg --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-x265 --with-fdk-aac
+
 ### Usage (development)
 
 You can add a `nodemon.json` file to your project to configure the public folder etc. This is useful if you're mounting a remote directory for example.
@@ -264,11 +267,3 @@ Use these steps to get up and running in development.
     # rsync -rztche ssh root@remotehost:/shared /Volumes/HD/backup
 
     rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose root@remotehost:/shared /Volumes/HD/backup
-
-### ffmpeg
-
-```
-$ brew install libvpx
-$ brew install ffmpeg --with-fdk-aac --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-x265
-```
-> via https://gist.github.com/clayton/6196167#gistcomment-2234948

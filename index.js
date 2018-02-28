@@ -90,7 +90,7 @@ const config = {
   app,
   authMiddleware,
   logDir: path.join(__dirname, 'log'),
-  uploadDir: path.join(__dirname, 'uploads'),
+  tmpDir: path.join(__dirname, 'tmp'),
   cacheDir: path.join(__dirname, 'cache'),
   cacheMaxSize: CACHE_MAX_SIZE,
   accessKeyId: ACCESS_KEY_ID,
@@ -102,8 +102,8 @@ if (!fs.existsSync(config.cacheDir)) {
   fs.mkdirSync(config.cacheDir);
 }
 
-if (!fs.existsSync(config.uploadDir)) {
-  fs.mkdirSync(config.uploadDir);
+if (!fs.existsSync(config.tmpDir)) {
+  fs.mkdirSync(config.tmpDir);
 }
 
 require('./routes/file')(config);
