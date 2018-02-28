@@ -96,7 +96,7 @@ module.exports = ({
           }
         }
 
-        if (/^(video)\/(.+)$/.test(mimeType)) {
+        if (/^(audio|video)\/(.+)$/.test(mimeType)) {
           metadata = await AV.process(tmpFile);
         }
 

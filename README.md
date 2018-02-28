@@ -167,7 +167,7 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
     $ git clone git://github.com/jcupitt/libvips.git; cd libvips; git reset --hard <commit id>; gtkdocize; ./bootstrap.sh; cd ../; rm -Rf libvips;
 
     # ffmpeg
-    $ brew install libvpx ffmpeg --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-x265 --with-fdk-aac
+    $ brew install libvpx ffmpeg --with-nonfree --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-libx264 --with-x265 --with-libmp3lame --with-libfdk-aac --with-libfaac
 
 ### Usage (development)
 
