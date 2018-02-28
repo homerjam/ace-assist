@@ -177,7 +177,7 @@ const transformHandler = async ({ bucket }, req, res) => {
       console.log(error);
     }
 
-    res.send(response);
+    res.sendSeekable(response);
   }
 
   if (response.promise) {
@@ -199,7 +199,8 @@ const transformHandler = async ({ bucket }, req, res) => {
     response.stream.pipe(res, { end: true });
 
   } else if (response.placeholder) {
-    fs.createReadStream(response.placeholder).pipe(res);
+    const placeholder = await fs.readFileAsync(response.placeholder);
+    res.sendSeekable(placeholder);
   }
 
   try {

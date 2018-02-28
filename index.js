@@ -7,6 +7,7 @@ const compression = require('compression');
 const errorHandler = require('errorhandler');
 const helmet = require('helmet');
 const expires = require('connect-expires');
+const sendSeekable = require('send-seekable');
 const http = require('http');
 const https = require('https');
 const passport = require('passport');
@@ -63,6 +64,7 @@ app.use(expires({
   pattern: /^(.*)$/,
   duration: 1000 * 60 * 60 * 24 * 365,
 }));
+app.use(sendSeekable);
 app.use(passport.initialize());
 
 app.use((req, res, next) => {
