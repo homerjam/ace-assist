@@ -81,8 +81,9 @@ const transformHandler = async ({ bucket }, req, res) => {
   settings.slug = slug;
 
   if (mode === 'local') {
-    const fileNameParts = req.params.fileName.split('.');
-    const fileName = fileNameParts.length > 2 ? fileNameParts.slice(0, fileNameParts.length - 1).join('.') : req.params.fileName;
+    let fileName = req.params.originalFileName ? `${req.params.fileName}/${req.params.originalFileName}` : req.params.fileName;
+    const fileNameParts = fileName.split(/(\.|\/)/);
+    fileName = fileNameParts.length === 2 || fileNameParts.length === 7 ? fileNameParts.slice(0, 3).join('') : fileName;
 
     file = `${slug}/${fileName}`;
 
