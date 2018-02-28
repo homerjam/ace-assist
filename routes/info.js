@@ -7,7 +7,7 @@ module.exports = ({
   publicDir,
 }) => {
 
-  app.get('/:slug/image/metadata', (req, res) => {
+  app.get('/:slug/info/metadata', (req, res) => {
     const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
     sharp(filePath)
@@ -16,7 +16,7 @@ module.exports = ({
       });
   });
 
-  // app.get('/:slug/image/palette', (req, res) => {
+  // app.get('/:slug/info/palette', (req, res) => {
   //   const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
   //   attention(filePath)
@@ -25,7 +25,7 @@ module.exports = ({
   //     });
   // });
 
-  // app.get('/:slug/image/focus-point', (req, res) => {
+  // app.get('/:slug/info/focus-point', (req, res) => {
   //   const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
   //   attention(filePath)
@@ -34,7 +34,7 @@ module.exports = ({
   //     });
   // });
 
-  // app.get('/:slug/image/focus-region', (req, res) => {
+  // app.get('/:slug/info/focus-region', (req, res) => {
   //   fs.readFileAsync(path.join(publicDir, req.params.slug, req.query.image || req.query.fileName))
   //     .then((file) => {
   //       smartcrop.crop(file, req.query)
@@ -51,7 +51,7 @@ module.exports = ({
   //     })
   // })
 
-  // app.get('/:slug/image/focus/region', (req, res) => {
+  // app.get('/:slug/info/focus/region', (req, res) => {
   //   const filePath = path.join(publicDir, req.params.slug, req.query.image || req.query.fileName);
 
   //   attention(filePath)

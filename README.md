@@ -264,3 +264,11 @@ Use these steps to get up and running in development.
     # rsync -rztche ssh root@remotehost:/shared /Volumes/HD/backup
 
     rsync --recursive --compress --times --checksum --human-readable --rsh=ssh --verbose root@remotehost:/shared /Volumes/HD/backup
+
+### ffmpeg
+
+```
+$ brew install libvpx
+$ brew install ffmpeg --with-fdk-aac --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-x265
+```
+> via https://gist.github.com/clayton/6196167#gistcomment-2234948

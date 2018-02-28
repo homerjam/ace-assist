@@ -3,6 +3,7 @@ const axios = require('axios');
 const si = require('systeminformation');
 const Filru = require('filru');
 const Image = require('../lib/image');
+const Video = require('../lib/video');
 const Logger = require('../lib/logger');
 const asyncMiddleware = require('../lib/async-middleware');
 
@@ -102,33 +103,41 @@ const transformHandler = async ({ bucket }, req, res) => {
   }
 
   const url = mode === 'local' ? `http://${bucket}.s3.amazonaws.com/${file}` : `http://${file}`;
-
-  const key = `[${url}](${JSON.stringify(settings)})`;
+  const key = `[${url}](${JSON.stringify(_.toPairs(settings).sort())})`;
 
   const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
   // const logInfo = Logger.info.bind(null, null, logPrefix);
   const logError = Logger.error.bind(null, res, logPrefix);
 
   let time = process.hrtime();
-
-  let buffer;
   let cachedResponse = false;
+  let response;
+
+  const type = Image.mimeTypes[settings.outputFormat] ? 'image' : 'video';
 
   // TODO: check and use filru cache using url/settings as key
   // for video use 'touch' to create empty key/placeholder and overwrite
   // if zero bytes then serve encoding in progress video
 
   try {
-    buffer = await filru.get(key);
+    response = await filru.get(key);
   } catch (error) {
     if (error.code !== 'ENOENT') {
       console.log(error);
     }
   }
 
-  if (!buffer) {
+  if (!response) {
     try {
-      buffer = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
+
+      if (type === 'image') {
+        response = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
+      }
+
+      if (type === 'video') {
+        response = await Video.transform((await axios.get(url, { responseType: 'stream' })).data, settings);
+      }
+
     } catch (error) {
       if (_.get(error, 'response.status') !== 403) {
         console.error(error.toString());
@@ -140,25 +149,32 @@ const transformHandler = async ({ bucket }, req, res) => {
     cachedResponse = true;
   }
 
-  try {
-    await filru.set(key, buffer);
-  } catch (error) {
-    console.log(error);
+  if (response instanceof Buffer) {
+    try {
+      await filru.set(key, response);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   time = process.hrtime(time);
   time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
 
-  res.set('Content-Type', Image.mimeTypes[settings.outputFormat]);
+  res.set('Content-Type', Image.mimeTypes[settings.outputFormat] || Video.mimeTypes[settings.outputFormat]);
   res.set('Last-Modified', new Date(0).toUTCString());
   res.set('Cache-Tag', settings.slug);
   res.set('X-Time-Elapsed', time);
   res.set('X-Cached-Response', cachedResponse);
 
   res.status(200);
-  res.send(buffer);
 
-  buffer = null;
+  if (type === 'image') {
+    res.send(response);
+  }
+
+  if (type === 'video') {
+    response.pipe(res);
+  }
 
   try {
     si.mem((mem) => {

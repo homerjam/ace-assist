@@ -111,7 +111,7 @@ require('./routes/log')(config);
 require('./routes/transform')(config);
 require('./routes/pdf')(config);
 require('./routes/utils')(config);
-require('./routes/image')(config);
+require('./routes/info')(config);
 
 // app.use(express.static(config.publicDir)); // TODO: replace with proxy
 
