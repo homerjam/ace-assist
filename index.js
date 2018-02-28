@@ -8,6 +8,7 @@ const errorHandler = require('errorhandler');
 const helmet = require('helmet');
 const expires = require('connect-expires');
 const sendSeekable = require('send-seekable');
+const proxy = require('express-http-proxy');
 const http = require('http');
 const https = require('https');
 const passport = require('passport');
@@ -115,8 +116,6 @@ require('./routes/pdf')(config);
 require('./routes/utils')(config);
 require('./routes/info')(config);
 
-// app.use(express.static(config.publicDir)); // TODO: replace with proxy
-
 app.get('/', (req, res) => {
   res.send(`
   <pre>
@@ -135,6 +134,8 @@ app.get('/robots.txt', (req, res) => {
   res.type('text/plain');
   res.send('User-agent: *\nDisallow:');
 });
+
+app.use('/', proxy(`http://${config.bucket}.s3.amazonaws.com/`));
 
 if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';

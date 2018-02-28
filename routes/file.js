@@ -1,5 +1,6 @@
 const path = require('path');
 const Promise = require('bluebird');
+const axios = require('axios');
 const fs = Promise.promisifyAll(require('fs'));
 const multiparty = require('connect-multiparty')();
 const uuid = require('uuid');
@@ -177,9 +178,18 @@ module.exports = ({
   //     }, logError);
   // });
 
-  // app.get('/:slug/file/download/:fileName/:originalFileName', (req, res) => {
-  //   const filePath = [publicDir, req.params.slug, req.params.fileName].join('/');
-  //   res.download(filePath, req.params.originalFileName);
-  // });
+  app.get(
+    '/:slug/file/download/:fileName/:originalFileName',
+    asyncMiddleware(async (req, res) => {
+      const fileUrl = `http://${bucket}.s3.amazonaws.com/${req.params.slug}/${req.params.fileName}`;
+
+      const stream = (await axios.get(fileUrl, { responseType: 'stream' })).data;
+
+      res.set('Content-Type', 'application/octet-stream');
+      res.set('Content-Disposition', `attachment; filename=${req.params.originalFileName}`);
+
+      stream.pipe(res);
+    })
+  );
 
 };
