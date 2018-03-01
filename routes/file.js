@@ -88,7 +88,7 @@ module.exports = ({
 
         let metadata = {};
 
-        if (/^(image)\/(.+)$/.test(mimeType)) {
+        if (Image.mimeTypes[mimeType.split('/')[1]]) {
           metadata = await Image.process(tmpFile);
 
           if (options.dzi) {
@@ -96,7 +96,7 @@ module.exports = ({
           }
         }
 
-        if (/^(audio|video)\/(.+)$/.test(mimeType)) {
+        if (AV.mimeTypes[mimeType.split('/')[1]]) {
           metadata = await AV.process(tmpFile);
         }
 
