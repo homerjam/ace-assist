@@ -147,36 +147,29 @@ module.exports = ({
     })
   );
 
-  // app.delete('/:slug/file/delete', authMiddleware, (req, res) => {
-  //   const slug = req.params.slug;
-  //   const files = req.body.files;
+  app.post(
+    '/:slug/file/delete',
+    authMiddleware,
+    asyncMiddleware(async (req, res) => {
+      const slug = req.params.slug;
+      const fileNames = req.body.fileNames;
 
-  //   // const logInfo = Logger.info.bind(null, null, 'delete');
-  //   const logError = Logger.error.bind(null, res, 'delete');
+      try {
+        const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-  //   const deleteFiles = files.map(file => new Promise((resolve, reject) => {
-  //     const name = path.parse(file).name;
+        const prefixes = fileNames.map(fileName => `${slug}/${fileName}`);
 
-  //     const pattern = `${path.join(publicDir, slug, name)}*`;
+        const results = await s3.delete(prefixes);
 
-  //     Glob(pattern, (error, _files) => {
-  //       const _deleteFiles = _files.map((_fileOrDir) => {
-  //         if (_fileOrDir.indexOf('.') !== -1) {
-  //           return fs.unlinkAsync(_fileOrDir);
-  //         }
-  //         return rimrafAsync(_fileOrDir);
-  //       });
+        res.status(200);
+        res.send(results);
 
-  //       Promise.all(_deleteFiles)
-  //         .then(resolve, reject);
-  //     });
-  //   }));
-
-  //   Promise.all(deleteFiles)
-  //     .then(() => {
-  //       res.status(200).send('OK');
-  //     }, logError);
-  // });
+      } catch (error) {
+        console.error(error);
+        Logger.error(res, 'delete', error);
+      }
+    })
+  );
 
   app.get(
     '/:slug/file/download/:fileName/:originalFileName',
