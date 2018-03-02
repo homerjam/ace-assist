@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const axios = require('axios');
 const si = require('systeminformation');
 const Filru = require('filru');
 const Image = require('../lib/image');
@@ -141,21 +140,21 @@ const transformHandler = async ({ bucket }, req, res) => {
     response = await filru.get(key);
   } catch (error) {
     if (error.code !== 'ENOENT') {
-      console.error(error);
+      console.error('Filru error:', error);
     }
   }
 
   if (!response) {
     try {
       if (type === 'image') {
-        response = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
+        response = await Image.transform(url, settings);
       }
       if (type === 'av') {
-        response = await AV.transform((await axios.get(url, { responseType: settings.inputFormat === 'gif' ? 'arraybuffer' : 'stream' })).data, settings, hashKey);
+        response = await AV.transform(url, settings, hashKey);
       }
     } catch (error) {
       if (_.get(error, 'response.status') !== 403) {
-        console.error(error.toString());
+        console.error('Transform error:', error);
       }
       logError(error);
       return;
@@ -186,7 +185,7 @@ const transformHandler = async ({ bucket }, req, res) => {
     try {
       await filru.set(key, response);
     } catch (error) {
-      console.log(error);
+      console.log('Filru error:', error);
     }
 
     res.sendSeekable(response);
