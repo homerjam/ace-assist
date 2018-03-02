@@ -185,8 +185,8 @@ module.exports = ({
 
       const stream = (await axios.get(fileUrl, { responseType: 'stream' })).data;
 
-      res.set('Content-Type', 'application/octet-stream');
-      res.set('Content-Disposition', `attachment; filename=${req.params.originalFileName}`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename=${req.params.originalFileName}`);
 
       stream.pipe(res);
     })

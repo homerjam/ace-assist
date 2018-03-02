@@ -1,7 +1,5 @@
 const _ = require('lodash');
 const axios = require('axios');
-const Promise = require('bluebird');
-const fs = Promise.promisifyAll(require('fs'));
 const si = require('systeminformation');
 const Filru = require('filru');
 const Image = require('../lib/image');
@@ -14,26 +12,35 @@ const MIN_AVAIL_MEM = 1024 * 1024 * 50; // 50 megabytes
 let filru;
 
 const transformHandler = async ({ bucket }, req, res) => {
-  const mode = req.params.fileName ? 'local' : 'proxy';
+  try {
+    si.mem((mem) => {
+      if (mem.available < MIN_AVAIL_MEM) {
+        global.gc();
+      }
+    });
+  } catch (error) {
+    console.error('Couldn\'t collect garbage, please run with --expose-gc option');
+  }
 
+  const mode = req.params.fileName ? 'local' : 'proxy';
   let settings = {};
+  let querySettings;
   let options;
-  let useQuery;
   let file;
 
   try {
-    useQuery = true;
-
     // Take settings from json string after ?
-    settings = JSON.parse(Object.keys(req.query)[0]);
-
-    if (!_.isObject(settings)) {
-      Logger.error(res, req.url, 'invalid settings');
-      return;
+    querySettings = JSON.parse(Object.keys(req.query)[0]);
+    if (_.isObject(querySettings)) {
+      settings = querySettings;
+    } else {
+      querySettings = false;
     }
   } catch (error) {
-    useQuery = false;
+    //
+  }
 
+  if (!querySettings) {
     if (req.params.options) {
       // Take settings from params
       options = req.params.options;
@@ -42,11 +49,6 @@ const transformHandler = async ({ bucket }, req, res) => {
     if (mode === 'proxy') {
       // Take settings from first part of params
       options = req.params[0].split('/')[0];
-    }
-
-    if (!options) {
-      Logger.error(res, req.url, error);
-      return;
     }
   }
 
@@ -83,7 +85,7 @@ const transformHandler = async ({ bucket }, req, res) => {
   if (mode === 'local') {
     let fileName = req.params.originalFileName ? `${req.params.fileName}/${req.params.originalFileName}` : req.params.fileName;
     const fileNameParts = fileName.split(/(\.|\/)/);
-    fileName = fileNameParts.length === 2 || fileNameParts.length === 7 ? fileNameParts.slice(0, 3).join('') : fileName;
+    fileName = [2, 5, 7].indexOf(fileNameParts.length) > -1 ? fileNameParts.slice(0, 3).join('') : fileName;
 
     file = `${slug}/${fileName}`;
 
@@ -91,7 +93,7 @@ const transformHandler = async ({ bucket }, req, res) => {
   }
 
   if (mode === 'proxy') {
-    if (useQuery) {
+    if (querySettings) {
       file = req.params[0];
     } else {
       file = req.params[0].split('/').slice(1).join('/');
@@ -105,13 +107,15 @@ const transformHandler = async ({ bucket }, req, res) => {
     settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
-  const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
-  // const logInfo = Logger.info.bind(null, null, logPrefix);
-  const logError = Logger.error.bind(null, res, logPrefix);
-
   if (settings.f) {
     settings.outputFormat = settings.f;
   }
+
+  settings.inputFormat = file.split('.').slice(-1)[0].toLowerCase();
+
+  const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
+  // const logInfo = Logger.info.bind(null, null, logPrefix);
+  const logError = Logger.error.bind(null, res, logPrefix);
 
   let type;
   if (Image.mimeTypes[settings.outputFormat]) {
@@ -147,7 +151,7 @@ const transformHandler = async ({ bucket }, req, res) => {
         response = await Image.transform((await axios.get(url, { responseType: 'arraybuffer' })).data, settings);
       }
       if (type === 'av') {
-        response = await AV.transform((await axios.get(url, { responseType: 'stream' })).data, settings, hashKey);
+        response = await AV.transform((await axios.get(url, { responseType: settings.inputFormat === 'gif' ? 'arraybuffer' : 'stream' })).data, settings, hashKey);
       }
     } catch (error) {
       if (_.get(error, 'response.status') !== 403) {
@@ -163,13 +167,20 @@ const transformHandler = async ({ bucket }, req, res) => {
   time = process.hrtime(time);
   time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
 
-  res.set('Content-Type', Image.mimeTypes[settings.outputFormat] || AV.mimeTypes[settings.outputFormat]);
-  res.set('Last-Modified', new Date(0).toUTCString());
-  res.set('Cache-Tag', settings.slug);
-  res.set('X-Time-Elapsed', time);
-  res.set('X-Cached-Response', cachedResponse);
+  res.setHeader('Content-Type', Image.mimeTypes[settings.outputFormat] || AV.mimeTypes[settings.outputFormat]);
+  res.setHeader('Last-Modified', new Date(0).toUTCString());
+  res.setHeader('Cache-Tag', settings.slug);
+  res.setHeader('X-Time-Elapsed', time);
+  res.setHeader('X-Cached-Response', cachedResponse);
 
   res.status(200);
+
+  if (response.promise) {
+    response.promise
+      .then((buffer) => {
+        filru.set(key, buffer);
+      });
+  }
 
   if (response instanceof Buffer) {
     try {
@@ -179,15 +190,8 @@ const transformHandler = async ({ bucket }, req, res) => {
     }
 
     res.sendSeekable(response);
-  }
 
-  if (response.promise) {
-    response.promise
-      .then(async (tmpFile) => {
-        const buffer = await fs.readFileAsync(tmpFile);
-        await fs.unlinkAsync(tmpFile);
-        filru.set(key, buffer);
-      });
+    return;
   }
 
   if (response.stream) {
@@ -199,18 +203,14 @@ const transformHandler = async ({ bucket }, req, res) => {
 
     response.stream.pipe(res, { end: true });
 
-  } else if (response.placeholder) {
-    res.sendFile(response.placeholder);
+    return;
   }
 
-  try {
-    si.mem((mem) => {
-      if (mem.available < MIN_AVAIL_MEM) {
-        global.gc();
-      }
-    });
-  } catch (error) {
-    console.error('Couldn\'t collect garbage, please run with --expose-gc option');
+  if (response.placeholder) {
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    res.setHeader('Expires', '-1');
+    res.setHeader('Pragma', 'no-cache');
+    res.sendFile(response.placeholder);
   }
 };
 
