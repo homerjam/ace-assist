@@ -6,7 +6,7 @@ const AV = require('../lib/av');
 const Logger = require('../lib/logger');
 const asyncMiddleware = require('../lib/async-middleware');
 
-const MIN_AVAIL_MEM = 1024 * 1024 * 50; // 50 megabytes
+const MIN_AVAIL_MEM = 1024 * 1024 * 500; // 500 megabytes
 
 let filru;
 

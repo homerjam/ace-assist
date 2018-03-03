@@ -77,7 +77,7 @@ module.exports = ({
 
         const name = uuid.v1();
         const ext = path.parse(tmpFile).ext.toLowerCase().replace('jpeg', 'jpg');
-        const mimeType = mime.getType(tmpFile);
+        // const mimeType = mime.getType(tmpFile);
 
         const objects = [
           {
@@ -88,7 +88,7 @@ module.exports = ({
 
         let metadata = {};
 
-        if (Image.mimeTypes[mimeType.split('/')[1]]) {
+        if (Image.mimeTypes[ext.replace('.')]) {
           metadata = await Image.process(tmpFile);
 
           if (options.dzi) {
@@ -96,7 +96,7 @@ module.exports = ({
           }
         }
 
-        if (AV.mimeTypes[mimeType.split('/')[1]]) {
+        if (AV.mimeTypes[ext.replace('.', '')]) {
           metadata = await AV.process(tmpFile);
         }
 
