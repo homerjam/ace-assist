@@ -40,6 +40,7 @@
     "gm": "^1.23.0",
     "greenlock": "^2.1.17",
     "greenlock-express": "^2.0.11",
+    "handbrake-js": "^2.2.2",
     "helmet": "^3.9.0",
     "le-challenge-fs": "^2.0.8",
     "le-challenge-sni": "^2.0.1",

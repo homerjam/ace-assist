@@ -4,8 +4,6 @@ const axios = require('axios');
 const fs = Promise.promisifyAll(require('fs'));
 const multiparty = require('connect-multiparty')();
 const uuid = require('uuid');
-const mime = require('mime');
-// const Glob = require('glob').Glob;
 const rimrafAsync = Promise.promisify(require('rimraf'));
 const duAsync = Promise.promisify(require('du'));
 const recursive = require('recursive-readdir');
@@ -70,14 +68,32 @@ module.exports = ({
         return;
       }
 
-      const tmpFile = path.join(tmpDir, upload.filename);
+      let tmpFile = path.join(tmpDir, upload.filename);
 
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
         const name = uuid.v1();
         const ext = path.parse(tmpFile).ext.toLowerCase().replace('jpeg', 'jpg');
-        // const mimeType = mime.getType(tmpFile);
+
+        let processResult;
+        let metadata = {};
+
+        if (Image.mimeTypes[ext.replace('.')]) {
+          processResult = await Image.process(tmpFile);
+          metadata = processResult.metadata;
+          tmpFile = processResult.filePath;
+
+          if (options.dzi) {
+            metadata.dzi = await Image.dzi(tmpFile, options.dzi);
+          }
+        }
+
+        if (AV.mimeTypes[ext.replace('.', '')]) {
+          processResult = await AV.process(tmpFile);
+          metadata = processResult.metadata;
+          tmpFile = processResult.filePath;
+        }
 
         const objects = [
           {
@@ -86,25 +102,9 @@ module.exports = ({
           },
         ];
 
-        let metadata = {};
-
-        if (Image.mimeTypes[ext.replace('.')]) {
-          metadata = await Image.process(tmpFile);
-
-          if (options.dzi) {
-            metadata.dzi = await Image.dzi(tmpFile, options.dzi);
-          }
-        }
-
-        if (AV.mimeTypes[ext.replace('.', '')]) {
-          metadata = await AV.process(tmpFile);
-        }
-
         const extrasPath = path.join(tmpDir, path.parse(tmpFile).name);
-
         let extrasFiles = [];
         let extrasSize = 0;
-
         try {
           extrasFiles = await recursive(extrasPath);
           extrasSize = await duAsync(extrasPath, { disk: true });
@@ -112,26 +112,29 @@ module.exports = ({
           //
         }
 
-        const extraObjects = extrasFiles.map(file => ({
-          file,
-          key: `${slug}/${name}${file.replace(extrasPath, '')}`,
-        }));
+        extrasFiles.forEach((file) => {
+          objects.push({
+            file,
+            key: `${slug}/${name}${file.replace(extrasPath, '')}`,
+          });
+        });
 
-        const transfers = objects.map(object => s3.upload(object.file, object.key))
-          .concat(extraObjects.map(object => s3.upload(object.file, object.key)));
-
-        const results = await Promise.all(transfers);
+        const results = await Promise.all(objects.map(object => s3.upload(object.file, object.key)));
 
         const result = results[0];
 
-        const size = result.original.fileSize + extrasSize;
+        const size = result.fileSize + extrasSize;
 
         result.file = {
           name,
           ext,
           size,
         };
-        result.original.fileName = upload.originalFilename;
+        result.original = {
+          fileName: upload.originalFilename,
+          fileSize: result.fileSize,
+          mimeType: result.mimeType,
+        };
         result.metadata = metadata;
 
         await Promise.all(objects.map(object => fs.unlinkAsync(object.file))
