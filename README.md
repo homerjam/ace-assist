@@ -1,10 +1,10 @@
 # ACE Assist
 
-A NodeJS app distributed as a docker image. Its purpose is simply to store high-res images for on-demand resizing, and to generate PDFs.
+This app provides endpoints for media transforms, PDF generation and convenience methods for managing S3 compatible assets. It's a Nodejs/Express app distributed as a Docker image.
 
-Resized images aren't persisted so it's advisable to use a CDN in front of the app and/or a high powered host.
+Resized images are cached but it's advisable to use a CDN in front of the app and/or a high powered host.
 
-The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations. Various endpoints are provided, see below.
+The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations.
 
 &nbsp;
 ### /:slug/file/upload `[POST]`
@@ -167,7 +167,7 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
     $ git clone git://github.com/jcupitt/libvips.git; cd libvips; git reset --hard <commit id>; gtkdocize; ./bootstrap.sh; cd ../; rm -Rf libvips;
 
     # ffmpeg
-    $ brew install libvpx ffmpeg --with-nonfree --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-libx264 --with-x265 --with-libmp3lame --with-libfdk-aac --with-libfaac
+    $ brew install libvpx ffmpeg --with-nonfree --with-tools --with-freetype --with-libass --with-libvorbis --with-libvpx --with-libx264 --with-x265 --with-libmp3lame --with-libfdk-aac
 
 ### Usage (development)
 
@@ -177,17 +177,21 @@ You can add a `nodemon.json` file to your project to configure the public folder
     {
         "watch": ["routes", "lib"],
         "env": {
-            "PUBLIC_FOLDER": "/mnt/assist1"
+            "CACHE_MAX_SIZE": 100,
+            "ACCESS_KEY_ID": "ACCESS_KEY_ID",
+            "SECRET_ACCESS_KEY": "SECRET_ACCESS_KEY",
+            "ENDPOINT": "ENDPOINT"
+            "BUCKET": "BUCKET"
         }
     }
 
 Use these steps to get up and running in development.
 
 	# build docker image
-	$ docker build --no-cache -t studiothomas/ace-assist .
+	$ docker build -t studiothomas/ace-assist .
 
     # or bypassing build cache
-	$ docker build -t studiothomas/ace-assist .
+	$ docker build --no-cache -t studiothomas/ace-assist .
 
 	# stop/remove previous container if exists
 	$ docker stop ace-assist; docker rm ace-assist
@@ -201,6 +205,11 @@ Use these steps to get up and running in development.
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
+        -e "CACHE_MAX_SIZE=500" \
+        -e "ACCESS_KEY_ID=ACCESS_KEY_ID" \
+        -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
+        -e "ENDPOINT=ENDPOINT" \
+        -e "BUCKET=BUCKET" \
         studiothomas/ace-assist
 
 	# test in browser
@@ -217,6 +226,11 @@ Use these steps to get up and running in development.
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
+        -e "CACHE_MAX_SIZE=500" \
+        -e "ACCESS_KEY_ID=ACCESS_KEY_ID" \
+        -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
+        -e "ENDPOINT=ENDPOINT" \
+        -e "BUCKET=BUCKET" \
         studiothomas/ace-assist
 
 ### Environment variables
@@ -228,6 +242,11 @@ Use these steps to get up and running in development.
     DOMAINS
 	USERNAME
 	PASSWORD
+    CACHE_MAX_SIZE
+    ACCESS_KEY_ID
+    SECRET_ACCESS_KEY
+    ENDPOINT
+    BUCKET
 
 ### Useful commands
 

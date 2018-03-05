@@ -47,7 +47,7 @@ const addItem = async (config, doc, obj, item, pi) => {
     // Force use of 'master' slug
     imagePath = imagePath.replace(`${obj.slug}/${obj.slug}`, obj.slug);
 
-    const url = `http://${config.bucket}.s3.amazonaws.com/${imagePath}`;
+    const url = `http://${config.bucket}.${config.endpoint}/${imagePath}`;
 
     const response = await axios.get(url, { responseType: 'arraybuffer' });
 

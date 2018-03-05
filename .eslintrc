@@ -15,7 +15,8 @@
     "global-require": 0,
     "class-methods-use-this": 1,
     "no-undef": 2,
-    "prefer-destructuring": 1,
-    "no-plusplus": 1
+    "prefer-destructuring": 0,
+    "no-plusplus": 1,
+    "no-console": 0
   }
 }

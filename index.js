@@ -17,6 +17,7 @@ const passwordHash = require('password-hash');
 const greenlock = require('greenlock');
 const greenlockExpress = require('greenlock-express');
 const redirectHttps = require('redirect-https');
+const rimraf = require('rimraf');
 // const consoleStamp = require('console-stamp')(console);
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
@@ -29,6 +30,7 @@ const PASSWORD = process.env.PASSWORD || 'password';
 const CACHE_MAX_SIZE = parseInt(process.env.CACHE_MAX_SIZE || 100, 10) * 1024 * 1024; // 100mb
 const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
+const ENDPOINT = process.env.ENDPOINT;
 const BUCKET = process.env.BUCKET;
 
 process.on('unhandledRejection', result => console.error('unhandledRejection:', result));
@@ -98,6 +100,7 @@ const config = {
   cacheMaxSize: CACHE_MAX_SIZE,
   accessKeyId: ACCESS_KEY_ID,
   secretAccessKey: SECRET_ACCESS_KEY,
+  endpoint: ENDPOINT,
   bucket: BUCKET,
 };
 
@@ -105,9 +108,8 @@ if (!fs.existsSync(config.cacheDir)) {
   fs.mkdirSync(config.cacheDir);
 }
 
-if (!fs.existsSync(config.tmpDir)) {
-  fs.mkdirSync(config.tmpDir);
-}
+rimraf.sync(config.tmpDir);
+fs.mkdirSync(config.tmpDir);
 
 require('./routes/file')(config);
 require('./routes/log')(config);
@@ -135,7 +137,7 @@ app.get('/robots.txt', (req, res) => {
   res.send('User-agent: *\nDisallow:');
 });
 
-app.use('/', proxy(`http://${config.bucket}.s3.amazonaws.com/`));
+app.use('/', proxy(`http://${config.bucket}.${config.endpoint}/`));
 
 if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';

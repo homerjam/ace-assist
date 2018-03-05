@@ -10,7 +10,7 @@ const MIN_AVAIL_MEM = 1024 * 1024 * 500; // 500 megabytes
 
 let filru;
 
-const transformHandler = async ({ bucket }, req, res) => {
+const transformHandler = async ({ endpoint, bucket }, req, res) => {
   try {
     si.mem((mem) => {
       if (mem.available < MIN_AVAIL_MEM) {
@@ -84,8 +84,8 @@ const transformHandler = async ({ bucket }, req, res) => {
   if (mode === 'local') {
     let fileName = req.params.originalFileName ? `${req.params.fileName}/${req.params.originalFileName}` : req.params.fileName;
     const fileNameParts = fileName.split(/(\.|\/)/);
-    fileName = [2, 5, 7].indexOf(fileNameParts.length) > -1 ? fileNameParts.slice(0, 3).join('') : fileName;
-
+    fileName = [2, 7].indexOf(fileNameParts.length) > -1 || (fileNameParts.length === 5 && fileNameParts[1] === '.')
+      ? fileNameParts.slice(0, 3).join('') : fileName;
     file = `${slug}/${fileName}`;
 
     settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
@@ -96,7 +96,6 @@ const transformHandler = async ({ bucket }, req, res) => {
       file = req.params[0];
     } else {
       file = req.params[0].split('/').slice(1).join('/');
-
       const qs = req.originalUrl.split('?')[1];
       if (qs) {
         file = `${file}?${qs}`;
@@ -128,7 +127,7 @@ const transformHandler = async ({ bucket }, req, res) => {
     return;
   }
 
-  const url = mode === 'local' ? `http://${bucket}.s3.amazonaws.com/${file}` : `http://${file}`;
+  const url = mode === 'local' ? `http://${bucket}.${endpoint}/${file}` : `http://${file}`;
   const key = `[${url}](${JSON.stringify(_.toPairs(settings).sort())})`;
   const hashKey = Filru.hash(key);
 
@@ -153,7 +152,7 @@ const transformHandler = async ({ bucket }, req, res) => {
         response = await AV.transform(url, settings, hashKey);
       }
     } catch (error) {
-      if (_.get(error, 'response.status') !== 403) {
+      if ([403, 404].indexOf(_.get(error, 'response.status')) === -1) {
         console.error('Transform error:', error);
       }
       logError(error);

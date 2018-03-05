@@ -20,6 +20,7 @@ module.exports = ({
   tmpDir,
   accessKeyId,
   secretAccessKey,
+  endpoint,
   bucket,
 }) => {
 
@@ -73,13 +74,12 @@ module.exports = ({
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-        const name = uuid.v1();
-        const ext = path.parse(tmpFile).ext.toLowerCase().replace('jpeg', 'jpg');
+        const type = path.parse(tmpFile).ext.toLowerCase().replace('.', '');
 
         let processResult;
         let metadata = {};
 
-        if (Image.mimeTypes[ext.replace('.')]) {
+        if (Image.mimeTypes[type]) {
           processResult = await Image.process(tmpFile);
           metadata = processResult.metadata;
           tmpFile = processResult.filePath;
@@ -89,11 +89,17 @@ module.exports = ({
           }
         }
 
-        if (AV.mimeTypes[ext.replace('.', '')]) {
+        if (AV.mimeTypes[type]) {
           processResult = await AV.process(tmpFile);
           metadata = processResult.metadata;
           tmpFile = processResult.filePath;
         }
+
+        const file = path.parse(tmpFile);
+
+        const name = uuid.v1();
+        const ext = file.ext.toLowerCase()
+          .replace('jpeg', 'jpg');
 
         const objects = [
           {
@@ -102,7 +108,7 @@ module.exports = ({
           },
         ];
 
-        const extrasPath = path.join(tmpDir, path.parse(tmpFile).name);
+        const extrasPath = path.join(tmpDir, file.name);
         let extrasFiles = [];
         let extrasSize = 0;
         try {
@@ -131,7 +137,7 @@ module.exports = ({
           size,
         };
         result.original = {
-          fileName: upload.originalFilename,
+          fileName: file.base,
           fileSize: result.fileSize,
           mimeType: result.mimeType,
         };
@@ -177,7 +183,7 @@ module.exports = ({
   app.get(
     '/:slug/file/download/:fileName/:originalFileName',
     asyncMiddleware(async (req, res) => {
-      const fileUrl = `http://${bucket}.s3.amazonaws.com/${req.params.slug}/${req.params.fileName}`;
+      const fileUrl = `http://${bucket}.${endpoint}/${req.params.slug}/${req.params.fileName}`;
 
       const stream = (await axios.get(fileUrl, { responseType: 'stream' })).data;
 
