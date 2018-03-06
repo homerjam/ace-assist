@@ -17,7 +17,6 @@ const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
 const greenlock = require('greenlock');
 const greenlockExpress = require('greenlock-express');
-const redirectHttps = require('redirect-https');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
 
@@ -145,6 +144,18 @@ app.use('/', proxy(`${config.bucket}.${config.endpoint}`, {
   limit: '500mb',
 }));
 
+const redirectHttps = (req, res, next) => {
+  if (req.connection.encrypted
+    || req.protocol === 'https'
+    || req.headers['x-forwarded-proto'] === 'https'
+  ) {
+    next();
+    return;
+  }
+
+  res.redirect(301, `https://${req.headers.host}${req.path}`);
+};
+
 if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';
 
@@ -163,7 +174,7 @@ if (ENVIRONMENT !== 'development') {
     debug,
   });
 
-  http.createServer(lex.middleware(redirectHttps())).listen(HTTP_PORT, function createServer() {
+  http.createServer(lex.middleware(redirectHttps)).listen(HTTP_PORT, function createServer() {
     console.log('Listening for ACME http-01 challenges on', this.address());
   });
 

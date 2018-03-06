@@ -2838,12 +2838,6 @@ redirect-https@^1.1.0:
   dependencies:
     escape-html "^1.0.3"
 
-redirect-https@^1.1.5:
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/redirect-https/-/redirect-https-1.1.5.tgz#7da596ba70ae923b36a69246e5fbc4aed32e6af5"
-  dependencies:
-    escape-html "^1.0.3"
-
 referrer-policy@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/referrer-policy/-/referrer-policy-1.1.0.tgz#35774eb735bf50fb6c078e83334b472350207d79"
