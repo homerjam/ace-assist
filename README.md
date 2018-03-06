@@ -197,7 +197,9 @@ Use these steps to get up and running in development.
 	$ docker stop ace-assist; docker rm ace-assist
 
 	# run container in interactive mode from image and bind ports, volumes
-	$ docker run --name ace-assist -i -p 49001:49001 -v ~/shared:/app/public:rw \
+	$ docker run --name ace-assist -i -p 49001:49001 \
+        -v ~/assist/cache:/app/cache:rw \
+        -v ~/assist/tmp:/app/tmp:rw \
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=development" \
@@ -218,7 +220,9 @@ Use these steps to get up and running in development.
 ### Usage (production)
 
 	# run container in daemon mode from image and bind ports, volumes with environment variables
-	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT -v /mnt/volume-fra1-01:/app/public:rw \
+	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
+        -v /var/assist/cache:/app/cache:rw \
+        -v /var/assist/tmp:/app/tmp:rw \
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=production" \
@@ -231,6 +235,14 @@ Use these steps to get up and running in development.
         -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
         -e "ENDPOINT=ENDPOINT" \
         -e "BUCKET=BUCKET" \
+        studiothomas/ace-assist
+
+    # using .env file
+	$ source .env; docker run --name ace-assist -d \
+        -p 80:$HTTP_PORT -p 443:$HTTPS_PORT \
+        --env-file=.env \
+        -v /var/assist/cache:/app/cache:rw \
+        -v /var/assist/tmp:/app/tmp:rw \
         studiothomas/ace-assist
 
 ### Environment variables
