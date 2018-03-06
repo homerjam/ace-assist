@@ -34,7 +34,6 @@
     "fluent-ffmpeg": "^2.1.2",
     "forever": "^0.15.3",
     "greenlock": "^2.1.17",
-    "greenlock-express": "^2.0.11",
     "handbrake-js": "^3.0.2",
     "helmet": "^3.12.0",
     "le-challenge-fs": "^2.0.8",

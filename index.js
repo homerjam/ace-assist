@@ -2,6 +2,7 @@ const express = require('express');
 const Promise = require('bluebird');
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const compression = require('compression');
@@ -16,7 +17,6 @@ const passport = require('passport');
 const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
 const greenlock = require('greenlock');
-const greenlockExpress = require('greenlock-express');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
 
@@ -153,13 +153,16 @@ const redirectHttps = (req, res, next) => {
     return;
   }
 
-  res.redirect(301, `https://${req.headers.host}${req.path}`);
+  res.writeHead(301, {
+    Location: `https://${req.headers.host}${url.parse(req.url).path}`,
+  });
+  res.end();
 };
 
 if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';
 
-  const lex = greenlockExpress.create({
+  const lex = greenlock.create({
     store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges', debug }),
     challenges: {
       'http-01': require('le-challenge-fs').create({ webrootPath: '/tmp/acme-challenges', debug }),
