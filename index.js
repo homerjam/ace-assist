@@ -141,7 +141,9 @@ app.get('/robots.txt', (req, res) => {
   res.send('User-agent: *\nDisallow:');
 });
 
-app.use('/', proxy(`http://${config.bucket}.${config.endpoint}/`));
+app.use('/', proxy(`${config.bucket}.${config.endpoint}`, {
+  limit: '500mb',
+}));
 
 if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';
