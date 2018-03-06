@@ -19,6 +19,7 @@
     "axios": "^0.18.0",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
+    "coffee-script": "^1.12.7",
     "compression": "^1.7.1",
     "connect-expires": "^0.0.2",
     "connect-multiparty": "^2.1.0",

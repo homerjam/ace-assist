@@ -1,4 +1,5 @@
 const express = require('express');
+const Promise = require('bluebird');
 const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -17,7 +18,7 @@ const passwordHash = require('password-hash');
 const greenlock = require('greenlock');
 const greenlockExpress = require('greenlock-express');
 const redirectHttps = require('redirect-https');
-const rimraf = require('rimraf');
+const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
@@ -108,8 +109,11 @@ if (!fs.existsSync(config.cacheDir)) {
   fs.mkdirSync(config.cacheDir);
 }
 
-rimraf.sync(config.tmpDir);
-fs.mkdirSync(config.tmpDir);
+if (!fs.existsSync(config.tmpDir)) {
+  fs.mkdirSync(config.tmpDir);
+}
+
+rimrafAsync(path.join(config.tmpDir, '*'));
 
 require('./routes/file')(config);
 require('./routes/log')(config);

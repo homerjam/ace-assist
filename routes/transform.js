@@ -63,10 +63,9 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     }
 
     options.forEach((option) => {
-      option = option.split(/_|:/);
-
-      const key = option[0].toLowerCase();
-      const value = option.length > 2 ? option.slice(1) : option[1];
+      const optionParts = option.split(/_|:/);
+      const key = optionParts[0].toLowerCase();
+      const value = optionParts.slice(1).join(':');
 
       if (settings[key] && _.isArray(settings[key])) {
         settings[key].push(value);
@@ -214,6 +213,7 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
 module.exports = ({
   app,
+  endpoint,
   bucket,
   cacheDir,
   cacheMaxSize,
@@ -222,7 +222,7 @@ module.exports = ({
   filru = new Filru(cacheDir, cacheMaxSize);
   filru.start();
 
-  const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, { bucket }));
+  const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, { endpoint, bucket }));
 
   app.get('/:slug/proxy/transform/*', transformHandlerAsync);
 
