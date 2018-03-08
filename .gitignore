@@ -4,7 +4,6 @@
 .vscode
 nodemon.json
 node_modules
-public
 cache
 tmp
 tests

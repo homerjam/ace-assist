@@ -2,9 +2,10 @@
 .env
 .helpers
 .DS_Store
+.vscode
 nodemon.json
 node_modules
-public
-uploads
+cache
+tmp
 tests
 typings
