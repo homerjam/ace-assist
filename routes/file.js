@@ -194,4 +194,19 @@ module.exports = ({
     })
   );
 
+  app.get(
+    '/:slug/file/view/:fileName/:originalFileName',
+    asyncMiddleware(async (req, res) => {
+      const fileUrl = `http://${bucket}.${endpoint}/${req.params.slug}/${req.params.fileName}`;
+
+      const stream = (await axios.get(fileUrl, { responseType: 'stream' })).data;
+
+      const type = path.parse(req.params.fileName).ext.toLowerCase().replace('.', '');
+
+      res.setHeader('Content-Type', Image.mimeTypes[type] || AV.mimeTypes[type]);
+
+      stream.pipe(res);
+    })
+  );
+
 };
