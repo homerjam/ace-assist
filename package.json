@@ -1,6 +1,6 @@
 {
   "name": "ace-assist",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "title": "ACE Assist",
   "description": "An image store with resizing and PDF generation",
   "author": {
