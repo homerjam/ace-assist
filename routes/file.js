@@ -32,13 +32,13 @@ module.exports = ({
   app.get('/:slug/file/upload?*', authMiddleware, (req, res) => {
     const flow = new Flow(tmpDir);
 
-    flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
-      .then(() => {
+    flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalChunks, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
+      .then((result) => {
         res.status(200);
-        res.send();
-      }, () => {
+        res.send(result);
+      }, (error) => {
         res.status(204);
-        res.send();
+        res.send(error);
       });
   });
 
