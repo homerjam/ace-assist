@@ -80,10 +80,12 @@ const addPage = (config, doc, obj, page, pi) => {
 
 module.exports = ({
   app,
+  endpoint,
   bucket,
 }) => {
 
   const config = {
+    endpoint,
     bucket,
   };
 
