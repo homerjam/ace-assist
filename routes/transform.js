@@ -136,6 +136,10 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
   try {
     response = await filru.get(key);
+    if (!response.length) {
+      await filru.del(key);
+      response = null;
+    }
   } catch (error) {
     if (error.code !== 'ENOENT') {
       console.error('Filru error:', error);
@@ -175,19 +179,35 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
   if (response.promise) {
     response.promise
       .then((buffer) => {
-        filru.set(key, buffer);
+        if (buffer.length) {
+          filru.set(key, buffer);
+        }
       });
   }
 
   if (response instanceof Buffer) {
+    if (!response.length) {
+      console.error('buffer: error:', url);
+    }
+
+    res.sendSeekable(response);
+    return;
+  }
+
+  if (response.buffer) {
     try {
-      await filru.set(key, response);
+      if (response.buffer.length) {
+        await filru.set(key, response.buffer);
+      }
     } catch (error) {
       console.log('Filru error:', error);
     }
 
-    res.sendSeekable(response);
+    if (!response.buffer.length) {
+      console.error('buffer: error:', url);
+    }
 
+    res.sendSeekable(response.buffer);
     return;
   }
 
@@ -199,7 +219,6 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     });
 
     response.stream.pipe(res, { end: true });
-
     return;
   }
 
