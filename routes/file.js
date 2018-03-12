@@ -4,6 +4,7 @@ const axios = require('axios');
 const fs = Promise.promisifyAll(require('fs'));
 const multiparty = require('connect-multiparty')();
 const uuid = require('uuid');
+const mime = require('mime');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 const duAsync = Promise.promisify(require('du'));
 const recursive = require('recursive-readdir');
@@ -203,7 +204,7 @@ module.exports = ({
 
       const type = path.parse(req.params.fileName).ext.toLowerCase().replace('.', '');
 
-      res.setHeader('Content-Type', Image.mimeTypes[type] || AV.mimeTypes[type]);
+      res.setHeader('Content-Type', mime.getType(type));
 
       stream.pipe(res);
     })

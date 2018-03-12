@@ -905,7 +905,7 @@ es6-promise@^4.1.1:
   version "4.2.4"
   resolved "https://registry.yarnpkg.com/es6-promise/-/es6-promise-4.2.4.tgz#dc4221c2b16518760bd8c39a52d8f356fc00ed29"
 
-escape-html@^1.0.3, escape-html@~1.0.3:
+escape-html@~1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/escape-html/-/escape-html-1.0.3.tgz#0258eae4d3d0c0974de1c169188ef0051d1d1988"
 
@@ -1484,6 +1484,16 @@ glob-parent@^2.0.0:
   dependencies:
     is-glob "^2.0.0"
 
+glob@^6.0.1:
+  version "6.0.4"
+  resolved "https://registry.yarnpkg.com/glob/-/glob-6.0.4.tgz#0f08860f6a155127b2fadd4f9ce24b1aab6e4d22"
+  dependencies:
+    inflight "^1.0.4"
+    inherits "2"
+    minimatch "2 || 3"
+    once "^1.3.0"
+    path-is-absolute "^1.0.0"
+
 glob@^7.0.3, glob@^7.0.5, glob@^7.1.2:
   version "7.1.2"
   resolved "https://registry.yarnpkg.com/glob/-/glob-7.1.2.tgz#c19c9df9a028702d678612384a6552404c636d15"
@@ -1520,18 +1530,7 @@ graceful-fs@~3.0.2:
   dependencies:
     natives "^1.1.0"
 
-greenlock-express@^2.0.11:
-  version "2.0.12"
-  resolved "https://registry.yarnpkg.com/greenlock-express/-/greenlock-express-2.0.12.tgz#0059a4d17b44c17faa9ccbcfb178c47a9d7b6ec7"
-  dependencies:
-    greenlock "^2.1.9"
-    le-challenge-fs "^2.0.4"
-    le-sni-auto "^2.0.1"
-    le-store-certbot "^2.0.3"
-    localhost.daplie.me-certificates "^1.2.3"
-    redirect-https "^1.1.0"
-
-greenlock@^2.1.17, greenlock@^2.1.9:
+greenlock@^2.1.17:
   version "2.1.18"
   resolved "https://registry.yarnpkg.com/greenlock/-/greenlock-2.1.18.tgz#c0251cf4d26afa8e2608744f3bbea45960960bc8"
   dependencies:
@@ -1992,7 +1991,7 @@ le-acme-core@^2.0.5:
     request "^2.74.0"
     rsa-compat "^1.2.7"
 
-le-challenge-fs@^2.0.2, le-challenge-fs@^2.0.4, le-challenge-fs@^2.0.8:
+le-challenge-fs@^2.0.2, le-challenge-fs@^2.0.8:
   version "2.0.8"
   resolved "https://registry.yarnpkg.com/le-challenge-fs/-/le-challenge-fs-2.0.8.tgz#b6d458a37f097e87df3d8b5ff67013737ab9d5a2"
   dependencies:
@@ -2004,7 +2003,7 @@ le-challenge-sni@^2.0.0, le-challenge-sni@^2.0.1:
   dependencies:
     le-tls-sni "^0.1.0"
 
-le-sni-auto@^2.0.1, le-sni-auto@^2.1.0:
+le-sni-auto@^2.1.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/le-sni-auto/-/le-sni-auto-2.1.1.tgz#ad5beb9d8cc8d84b1e128082c7072f84c43ca97b"
   dependencies:
@@ -2060,7 +2059,7 @@ load-json-file@^2.0.0:
     pify "^2.0.0"
     strip-bom "^3.0.0"
 
-localhost.daplie.me-certificates@^1.2.3, localhost.daplie.me-certificates@^1.3.0:
+localhost.daplie.me-certificates@^1.3.0:
   version "1.3.5"
   resolved "https://registry.yarnpkg.com/localhost.daplie.me-certificates/-/localhost.daplie.me-certificates-1.3.5.tgz#1a3a87e4f957f269f62cfee60a63697bd2553a9a"
 
@@ -2184,7 +2183,7 @@ mime@1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/mime/-/mime-1.4.1.tgz#121f9ebc49e3766f311a76e1fa1c8003c4b03aa6"
 
-mime@^2.0.3:
+mime@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/mime/-/mime-2.2.0.tgz#161e541965551d3b549fa1114391e3a3d55b923b"
 
@@ -2196,7 +2195,7 @@ mimic-response@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-1.0.0.tgz#df3d3652a73fded6b9b0b24146e6fd052353458e"
 
-minimatch@3.0.4, minimatch@^3.0.0, minimatch@^3.0.2, minimatch@^3.0.3, minimatch@^3.0.4, minimatch@~3.0.2:
+"minimatch@2 || 3", minimatch@3.0.4, minimatch@^3.0.0, minimatch@^3.0.2, minimatch@^3.0.3, minimatch@^3.0.4, minimatch@~3.0.2:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-3.0.4.tgz#5166e286457f03306064be5497e8dbb0c3d32083"
   dependencies:
@@ -2230,7 +2229,7 @@ mkdirp2@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/mkdirp2/-/mkdirp2-1.0.3.tgz#cc8dd8265f1f06e2d8f5b10b6e52f4e050bed21b"
 
-mkdirp@0.5, mkdirp@0.x.x, "mkdirp@>=0.5 0", mkdirp@^0.5.0, mkdirp@^0.5.1:
+mkdirp@0.5, mkdirp@0.x.x, "mkdirp@>=0.5 0", mkdirp@^0.5.0, mkdirp@^0.5.1, mkdirp@~0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.5.1.tgz#30057438eac6cf7f8c4767f38648d6697d75c903"
   dependencies:
@@ -2249,6 +2248,14 @@ multiparty@~4.1.3:
 mute-stream@0.0.7, mute-stream@~0.0.4:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.7.tgz#3075ce93bc21b8fab43e1bc4da7e8115ed1e7bab"
+
+mv@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/mv/-/mv-2.1.1.tgz#ae6ce0d6f6d5e0a4f7d893798d03c1ea9559b6a2"
+  dependencies:
+    mkdirp "~0.5.1"
+    ncp "~2.0.0"
+    rimraf "~2.4.0"
 
 nan@^2.3.0, nan@^2.3.3, nan@^2.5.0, nan@^2.9.2:
   version "2.9.2"
@@ -2273,6 +2280,10 @@ nconf@0.6.9, nconf@~0.6.9:
 ncp@0.4.x:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/ncp/-/ncp-0.4.2.tgz#abcc6cbd3ec2ed2a729ff6e7c1fa8f01784a8574"
+
+ncp@~2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/ncp/-/ncp-2.0.0.tgz#195a21d6c46e361d2fb1281ba38b91e9df7bdbb3"
 
 negotiator@0.6.1:
   version "0.6.1"
@@ -2832,12 +2843,6 @@ redent@^1.0.0:
     indent-string "^2.1.0"
     strip-indent "^1.0.1"
 
-redirect-https@^1.1.0:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/redirect-https/-/redirect-https-1.1.2.tgz#99e7c7732c7c1a0ba8f50310e4d22410305914d3"
-  dependencies:
-    escape-html "^1.0.3"
-
 referrer-policy@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/referrer-policy/-/referrer-policy-1.1.0.tgz#35774eb735bf50fb6c078e83334b472350207d79"
@@ -2983,6 +2988,12 @@ rimraf@2, rimraf@2.x.x, rimraf@^2.2.8, rimraf@^2.5.1, rimraf@^2.6.1, rimraf@^2.6
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.6.2.tgz#2ed8150d24a16ea8651e6d6ef0f47c4158ce7a36"
   dependencies:
     glob "^7.0.5"
+
+rimraf@~2.4.0:
+  version "2.4.5"
+  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.4.5.tgz#ee710ce5d93a8fdb856fb5ea8ff0e2d75934b2da"
+  dependencies:
+    glob "^6.0.1"
 
 rsa-compat@^1.2.1, rsa-compat@^1.2.7:
   version "1.2.7"

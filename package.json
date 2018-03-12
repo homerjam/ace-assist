@@ -41,7 +41,7 @@
     "le-store-certbot": "^2.0.5",
     "lodash": "^4.17.4",
     "method-override": "^2.3.10",
-    "mime": "^2.0.3",
+    "mime": "^2.2.0",
     "mv": "^2.1.1",
     "passport": "^0.4.0",
     "passport-http": "^0.3.0",
