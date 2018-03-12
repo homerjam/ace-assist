@@ -162,12 +162,17 @@ module.exports = ({
     authMiddleware,
     asyncMiddleware(async (req, res) => {
       const slug = req.params.slug;
-      const fileNames = req.body.fileNames;
+      let fileNames = req.body.fileNames;
 
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-        const prefixes = fileNames.map(fileName => `${slug}/${fileName}`);
+        fileNames = fileNames.filter(fileName => fileName);
+
+        const originalFilePrefixes = fileNames.map(fileName => `${slug}/${fileName}.`);
+        const extraFilePrefixes = fileNames.map(fileName => `${slug}/${fileName}/`);
+
+        const prefixes = originalFilePrefixes.concat(extraFilePrefixes);
 
         const results = await s3.delete(prefixes);
 
