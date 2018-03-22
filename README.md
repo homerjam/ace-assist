@@ -207,6 +207,7 @@ Use these steps to get up and running in development.
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
+        -e "UV_THREADPOOL_SIZE=64" \
         -e "CACHE_MAX_SIZE=500" \
         -e "ACCESS_KEY_ID=ACCESS_KEY_ID" \
         -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
@@ -219,6 +220,8 @@ Use these steps to get up and running in development.
 
 ### Usage (production)
 
+Note: Increase the `UV_THREADPOOL_SIZE` to improve `fs.readFile` performance, the default is 4.
+
 	# run container in daemon mode from image and bind ports, volumes with environment variables
 	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
         -v /var/assist/cache:/app/cache:rw \
@@ -230,6 +233,7 @@ Use these steps to get up and running in development.
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
+        -e "UV_THREADPOOL_SIZE=64" \
         -e "CACHE_MAX_SIZE=500" \
         -e "ACCESS_KEY_ID=ACCESS_KEY_ID" \
         -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
@@ -254,6 +258,7 @@ Use these steps to get up and running in development.
     DOMAINS
 	USERNAME
 	PASSWORD
+    UV_THREADPOOL_SIZE
     CACHE_MAX_SIZE
     ACCESS_KEY_ID
     SECRET_ACCESS_KEY
