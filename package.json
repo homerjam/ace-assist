@@ -15,7 +15,7 @@
     "start": "nodemon --expose-gc index.js"
   },
   "dependencies": {
-    "aws-sdk": "^2.248.1",
+    "aws-sdk": "^2.257.1",
     "axios": "^0.18.0",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.3",
@@ -30,7 +30,7 @@
     "errorhandler": "^1.5.0",
     "express": "^4.16.3",
     "express-http-proxy": "^1.2.0",
-    "filru": "^1.0.1",
+    "filru": "github:homerjam/filru#stream",
     "fluent-ffmpeg": "^2.1.2",
     "forever": "^0.15.3",
     "greenlock": "^2.2.19",
@@ -43,6 +43,7 @@
     "method-override": "^2.3.10",
     "mime": "^2.3.1",
     "mv": "^2.1.1",
+    "node-vibrant": "^3.0.0",
     "passport": "^0.4.0",
     "passport-http": "^0.3.0",
     "password-hash": "^1.2.2",

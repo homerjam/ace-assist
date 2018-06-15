@@ -1,3 +1,4 @@
+const stream = require('stream');
 const _ = require('lodash');
 const si = require('systeminformation');
 const Filru = require('filru');
@@ -136,7 +137,12 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
   try {
     response = await filru.get(key);
-    if (!response.length) {
+
+    if (response instanceof Buffer && !response.length) {
+      await filru.del(key);
+      response = null;
+    }
+    if (response instanceof stream.Readable && !response.readable) {
       await filru.del(key);
       response = null;
     }
@@ -194,6 +200,15 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     return;
   }
 
+  if (response instanceof stream.Readable) {
+    if (!response.readable) {
+      console.error('stream: error:', url);
+    }
+
+    response.pipe(res);
+    return;
+  }
+
   if (response.buffer) {
     try {
       if (response.buffer.length) {
@@ -238,7 +253,10 @@ module.exports = ({
   cacheMaxSize,
 }) => {
 
-  filru = new Filru(cacheDir, cacheMaxSize);
+  filru = new Filru({
+    dir: cacheDir,
+    maxBytes: cacheMaxSize,
+  });
   filru.start();
 
   const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, { endpoint, bucket }));
