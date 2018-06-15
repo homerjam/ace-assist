@@ -10,14 +10,14 @@ RUN apt-get update && apt-get install -y --fix-missing autoconf automake build-e
 # RUN wget https://raw.github.com/logentries/le/master/install/linux/logentries_install.sh && sudo bash logentries_install.sh
 
 # Install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get update && apt-get install -y nodejs
 
 # Install handbrake-cli
 RUN add-apt-repository --yes ppa:stebbins/handbrake-releases && apt-get update -qq && apt-get install -qq handbrake-cli
 
 # Install ffmpeg
-ENV FFMPEG_VERSION=3.4.2
+ENV FFMPEG_VERSION=4.0
 RUN add-apt-repository multiverse && apt-get update && apt-get install -y libass-dev libfreetype6-dev libsdl2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev zlib1g-dev libssl-dev libwebp-dev nasm yasm libx264-dev libx265-dev libvpx-dev libfdk-aac-dev libmp3lame-dev libopus-dev && \
   DIR=$(mktemp -d) && cd ${DIR} && \
   curl -s http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz | tar zxvf - -C . && \
