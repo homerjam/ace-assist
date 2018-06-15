@@ -200,6 +200,7 @@ Use these steps to get up and running in development.
 	$ docker run --name ace-assist -i -p 49001:49001 \
         -v ~/assist/cache:/app/cache:rw \
         -v ~/assist/tmp:/app/tmp:rw \
+        -v /tmp/acme:/tmp/acme:rw \
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=development" \
@@ -226,6 +227,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve `fs.readFile` performance, th
 	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
         -v /var/assist/cache:/app/cache:rw \
         -v /var/assist/tmp:/app/tmp:rw \
+        -v /tmp/acme:/tmp/acme:rw \
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=production" \
@@ -247,6 +249,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve `fs.readFile` performance, th
         --env-file=.env \
         -v /var/assist/cache:/app/cache:rw \
         -v /var/assist/tmp:/app/tmp:rw \
+        -v /tmp/acme:/tmp/acme:rw \
         studiothomas/ace-assist
 
 ### Environment variables

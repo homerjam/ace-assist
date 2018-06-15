@@ -163,13 +163,15 @@ if (ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT !== 'production';
 
   const lex = greenlock.create({
-    store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges', debug }),
+    version: 'draft-11',
+    store: require('le-store-certbot').create({ webrootPath: '/tmp/acme/var', debug }),
     challenges: {
-      'http-01': require('le-challenge-fs').create({ webrootPath: '/tmp/acme-challenges', debug }),
+      'http-01': require('le-challenge-fs').create({ webrootPath: '/tmp/acme/var', debug }),
       'tls-sni-01': require('le-challenge-sni').create({ debug }),
       'tls-sni-02': require('le-challenge-sni').create({ debug }),
     },
     server: ENVIRONMENT !== 'production' ? greenlock.stagingServerUrl : greenlock.productionServerUrl,
+    configDir: '/tmp/acme/etc',
     email: EMAIL,
     agreeTos: true,
     approveDomains: DOMAINS.split(','),
