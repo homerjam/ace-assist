@@ -30,18 +30,22 @@ module.exports = ({
     res.send();
   });
 
-  app.get('/:slug/file/upload?*', authMiddleware, (req, res) => {
-    const flow = new Flow(tmpDir);
+  app.get(
+    '/:slug/file/upload?*',
+    authMiddleware,
+    (req, res) => {
+      const flow = new Flow(tmpDir);
 
-    flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalChunks, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
-      .then((result) => {
-        res.status(200);
-        res.send(result);
-      }, (error) => {
-        res.status(204);
-        res.send(error);
-      });
-  });
+      flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalChunks, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
+        .then((result) => {
+          res.status(200);
+          res.send(result);
+        }, (error) => {
+          res.status(204);
+          res.send(error);
+        });
+    }
+  );
 
   app.post(
     '/:slug/file/upload?*',
