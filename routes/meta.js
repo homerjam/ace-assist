@@ -8,7 +8,12 @@ module.exports = ({
   bucket,
 }) => {
 
-  app.all(
+  app.options('/:slug/meta*', (req, res) => {
+    res.status(200);
+    res.send();
+  });
+
+  app.get(
     '/:slug/meta/palette/:fileName',
     asyncMiddleware(async (req, res) => {
       const fileUrl = `http://${bucket}.${endpoint}/${req.params.slug}/${req.params.fileName}`;
