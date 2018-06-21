@@ -205,7 +205,7 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
       console.error('stream: error:', url);
     }
 
-    response.pipe(res);
+    res.sendSeekable(response, { length: response.length });
     return;
   }
 
