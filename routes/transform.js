@@ -2,6 +2,7 @@ const stream = require('stream');
 const _ = require('lodash');
 const si = require('systeminformation');
 const Filru = require('filru');
+const AWS = require('aws-sdk');
 const Image = require('../lib/image');
 const AV = require('../lib/av');
 const Logger = require('../lib/logger');
@@ -9,7 +10,8 @@ const asyncMiddleware = require('../lib/async-middleware');
 
 const MIN_AVAIL_MEM = 1024 * 1024 * 500; // 500 megabytes
 
-let filru;
+// let filru;
+let s3;
 
 const transformHandler = async ({ endpoint, bucket }, req, res) => {
   try {
@@ -129,26 +131,41 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
   const url = mode === 'local' ? `http://${bucket}.${endpoint}/${file}` : `http://${file}`;
   const key = `[${url}](${JSON.stringify(_.toPairs(settings).sort())})`;
-  const hashKey = Filru.hash(key);
+  const hashKey = `${Filru.hash(key)}.${settings.outputFormat}`;
 
   let response;
   let cachedResponse = false;
   let time = process.hrtime();
 
   try {
-    response = await filru.get(key);
+    // response = await filru.get(key);
+
+    // response = (await s3.getObject({
+    //   Bucket: bucket,
+    //   Key: `_cache/${hashKey}`,
+    // }).promise()).Body;
+
+    const object = await s3.headObject({
+      Bucket: bucket,
+      Key: `_cache/${hashKey}`,
+    }).promise();
+    response = s3.getObject({
+      Bucket: bucket,
+      Key: `_cache/${hashKey}`,
+    }).createReadStream();
+    response.length = object.ContentLength;
 
     if (response instanceof Buffer && !response.length) {
-      await filru.del(key);
+      // await filru.del(key);
       response = null;
     }
     if (response instanceof stream.Readable && !response.readable) {
-      await filru.del(key);
+      // await filru.del(key);
       response = null;
     }
   } catch (error) {
-    if (error.code !== 'ENOENT') {
-      console.error('Filru error:', error);
+    if (!/(ENOENT|NotFound|NoSuchKey)/.test(error.code)) {
+      console.error('Error:', error);
     }
   }
 
@@ -174,7 +191,9 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
   time = process.hrtime(time);
   time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
 
-  res.setHeader('Content-Type', Image.mimeTypes[settings.outputFormat] || AV.mimeTypes[settings.outputFormat]);
+  const mimeType = Image.mimeTypes[settings.outputFormat] || AV.mimeTypes[settings.outputFormat];
+
+  res.setHeader('Content-Type', mimeType);
   res.setHeader('Last-Modified', new Date(0).toUTCString());
   res.setHeader('Cache-Tag', settings.slug);
   res.setHeader('X-Time-Elapsed', time);
@@ -186,7 +205,23 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     response.promise
       .then((buffer) => {
         if (buffer.length) {
-          filru.set(key, buffer);
+          // filru.set(key, buffer);
+          s3.upload({
+            Bucket: bucket,
+            Key: `_cache/${hashKey}`,
+            Body: buffer,
+            ACL: 'public-read',
+            StorageClass: 'REDUCED_REDUNDANCY',
+            Metadata: {},
+            Expires: new Date('2099-01-01'),
+            CacheControl: 'max-age=31536000',
+            ContentType: mimeType,
+            ContentLength: buffer.length,
+          }, (error) => {
+            if (error) {
+              console.error('Error:', error);
+            }
+          });
         }
       });
   }
@@ -212,10 +247,26 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
   if (response.buffer) {
     try {
       if (response.buffer.length) {
-        await filru.set(key, response.buffer);
+        // await filru.set(key, response.buffer);
+        s3.upload({
+          Bucket: bucket,
+          Key: `_cache/${hashKey}`,
+          Body: response.buffer,
+          ACL: 'public-read',
+          StorageClass: 'REDUCED_REDUNDANCY',
+          Metadata: {},
+          Expires: new Date('2099-01-01'),
+          CacheControl: 'max-age=31536000',
+          ContentType: mimeType,
+          ContentLength: response.buffer.length,
+        }, (error) => {
+          if (error) {
+            console.error('Error:', error);
+          }
+        });
       }
     } catch (error) {
-      console.log('Filru error:', error);
+      console.error('Error:', error);
     }
 
     if (!response.buffer.length) {
@@ -247,19 +298,29 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
 module.exports = ({
   app,
+  accessKeyId,
+  secretAccessKey,
   endpoint,
   bucket,
   cacheDir,
   cacheMaxSize,
 }) => {
 
-  filru = new Filru({
-    dir: cacheDir,
-    maxBytes: cacheMaxSize,
-  });
-  filru.start();
+  // filru = new Filru({
+  //   dir: cacheDir,
+  //   maxBytes: cacheMaxSize,
+  // });
+  // filru.start();
 
-  const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, { endpoint, bucket }));
+  s3 = new AWS.S3({
+    accessKeyId,
+    secretAccessKey,
+  });
+
+  const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, {
+    endpoint,
+    bucket,
+  }));
 
   app.get('/:slug/proxy/transform/*', transformHandlerAsync);
 
