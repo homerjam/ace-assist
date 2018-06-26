@@ -47,7 +47,7 @@ Resizes the requested image on-demand.
 | `filename` | File to be transformed |
 | `options` | Serialized transform options, see below... |
 
-#### Transform options
+### Transform options
 
 Options should be in the following format:
 
@@ -57,8 +57,11 @@ Multiple options can be combined with semi-colons:
 
     w:200;h:200;g:attention
 
+**Image Options**
+
 | Option | Description |
 | --- | --- |
+| `f` | Output format: `jpg`, `png`, `webp` |
 | `w` | Width in pixels or as a percentage if < 1 |
 | `h` | Height in pixels or as a percentage if < 1 |
 | `q` | Quality `1-100` (jpeg, webp) |
@@ -70,7 +73,17 @@ Multiple options can be combined with semi-colons:
 | `y2` | MANUAL Crop method bottom-right y-axis coord  `0-1` |
 | `bl` | Blur `0.3+` |
 | `sh` | Sharpen `0.5+` |
-| `f` | Output format: `jpg`, `png`, `webp` |
+
+**Video Options**
+
+| Option | Description |
+| --- | --- |
+| `f` | Output format: `mp4`, `webm` |
+| `w` | Width in pixels |
+| `h` | Height in pixels |
+| `bv` | Video bitrate |
+| `ba` | Audio bitrate |
+
 
 &nbsp;
 ### /:slug/pdf/download `[POST]`
