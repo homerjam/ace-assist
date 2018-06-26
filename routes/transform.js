@@ -195,6 +195,32 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
   const mimeType = Image.mimeTypes[settings.outputFormat] || AV.mimeTypes[settings.outputFormat];
 
+  const storeResult = (result) => {
+    if (!result.length) {
+      console.error('buffer: error:', url);
+      return;
+    }
+
+    // filru.set(key, result);
+
+    s3.upload({
+      Bucket: bucket,
+      Key: `_cache/${hashKey}`,
+      Body: result,
+      ACL: 'public-read',
+      StorageClass: 'REDUCED_REDUNDANCY',
+      Metadata: {},
+      Expires: new Date('2099-01-01'),
+      CacheControl: 'max-age=31536000',
+      ContentType: mimeType,
+      ContentLength: result.length,
+    }, (error) => {
+      if (error) {
+        console.error('s3: error:', error);
+      }
+    });
+  };
+
   res.setHeader('Content-Type', mimeType);
   res.setHeader('Last-Modified', new Date(0).toUTCString());
   res.setHeader('Cache-Tag', settings.slug);
@@ -202,31 +228,6 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
   res.setHeader('X-Cached-Response', cachedResponse);
 
   res.status(200);
-
-  if (response.promise) {
-    response.promise
-      .then((buffer) => {
-        if (buffer.length) {
-          // filru.set(key, buffer);
-          s3.upload({
-            Bucket: bucket,
-            Key: `_cache/${hashKey}`,
-            Body: buffer,
-            ACL: 'public-read',
-            StorageClass: 'REDUCED_REDUNDANCY',
-            Metadata: {},
-            Expires: new Date('2099-01-01'),
-            CacheControl: 'max-age=31536000',
-            ContentType: mimeType,
-            ContentLength: buffer.length,
-          }, (error) => {
-            if (error) {
-              console.error('Error:', error);
-            }
-          });
-        }
-      });
-  }
 
   if (response instanceof Buffer) {
     if (!response.length) {
@@ -247,33 +248,7 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
   }
 
   if (response.buffer) {
-    try {
-      if (response.buffer.length) {
-        // await filru.set(key, response.buffer);
-        s3.upload({
-          Bucket: bucket,
-          Key: `_cache/${hashKey}`,
-          Body: response.buffer,
-          ACL: 'public-read',
-          StorageClass: 'REDUCED_REDUNDANCY',
-          Metadata: {},
-          Expires: new Date('2099-01-01'),
-          CacheControl: 'max-age=31536000',
-          ContentType: mimeType,
-          ContentLength: response.buffer.length,
-        }, (error) => {
-          if (error) {
-            console.error('Error:', error);
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-
-    if (!response.buffer.length) {
-      console.error('buffer: error:', url);
-    }
+    storeResult(response.buffer);
 
     res.sendSeekable(response.buffer);
     return;
@@ -290,7 +265,7 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     return;
   }
 
-  if (response.placeholder) {
+  if (response.placeholder && settings.ph) {
     res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
     res.setHeader('Expires', '-1');
     res.setHeader('Pragma', 'no-cache');
@@ -298,6 +273,17 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     const stats = await fs.statAsync(response.placeholder);
 
     res.sendSeekable(fs.createReadStream(response.placeholder), { length: stats.size });
+  }
+
+  if (response.promise) {
+    response.promise
+      .then((buffer) => {
+        storeResult(buffer);
+
+        if (!settings.ph) {
+          res.sendSeekable(buffer);
+        }
+      });
   }
 };
 
