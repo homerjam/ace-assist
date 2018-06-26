@@ -1,3 +1,5 @@
+const Promise = require('bluebird');
+const fs = Promise.promisifyAll(require('fs'));
 const stream = require('stream');
 const _ = require('lodash');
 const si = require('systeminformation');
@@ -292,7 +294,10 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
     res.setHeader('Expires', '-1');
     res.setHeader('Pragma', 'no-cache');
-    res.sendFile(response.placeholder);
+
+    const stats = await fs.statAsync(response.placeholder);
+
+    res.sendSeekable(fs.createReadStream(response.placeholder), { length: stats.size });
   }
 };
 
