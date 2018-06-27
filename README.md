@@ -234,7 +234,7 @@ Use these steps to get up and running in development.
 
 ### Usage (production)
 
-Note: Increase the `UV_THREADPOOL_SIZE` to improve `fs.readFile` performance, the default is 4.
+Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the default is 4.
 
 	# run container in daemon mode from image and bind ports, volumes with environment variables
 	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
