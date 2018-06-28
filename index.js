@@ -158,14 +158,19 @@ const redirectHttps = (req, res, next) => {
   res.end();
 };
 
-if (SSL_DISABLED || ENVIRONMENT === 'development') {
-  const httpServer = http.createServer(app);
-  httpServer.on('listening', () => {
+if (ENVIRONMENT === 'development') {
+  http.createServer(app).listen(HTTP_PORT, () => {
     console.log(`Express server listening on port ${HTTP_PORT}`);
   });
-  httpServer.listen(HTTP_PORT);
+}
 
-} else {
+if (SSL_DISABLED && ENVIRONMENT !== 'development') {
+  https.createServer(app).listen(HTTPS_PORT, () => {
+    console.log(`Express server listening on port ${HTTPS_PORT}`);
+  });
+}
+
+if (!SSL_DISABLED && ENVIRONMENT !== 'development') {
   const debug = ENVIRONMENT === 'testing';
 
   const lex = greenlock.create({
