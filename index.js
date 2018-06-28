@@ -21,6 +21,7 @@ const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
+const SSL_DISABLED = process.env.SSL_DISABLED ? JSON.parse(process.env.SSL_DISABLED) : false;
 const HTTP_PORT = process.env.HTTP_PORT || 49001;
 const HTTPS_PORT = process.env.HTTPS_PORT || 49002;
 const EMAIL = process.env.EMAIL || '';
@@ -157,8 +158,15 @@ const redirectHttps = (req, res, next) => {
   res.end();
 };
 
-if (ENVIRONMENT !== 'development') {
-  const debug = ENVIRONMENT !== 'production';
+if (SSL_DISABLED || ENVIRONMENT === 'development') {
+  const httpServer = http.createServer(app);
+  httpServer.on('listening', () => {
+    console.log(`Express server listening on port ${HTTP_PORT}`);
+  });
+  httpServer.listen(HTTP_PORT);
+
+} else {
+  const debug = ENVIRONMENT === 'testing';
 
   const lex = greenlock.create({
     version: 'draft-11',
@@ -168,7 +176,7 @@ if (ENVIRONMENT !== 'development') {
       'tls-sni-01': require('le-challenge-sni').create({ debug }),
       'tls-sni-02': require('le-challenge-sni').create({ debug }),
     },
-    server: ENVIRONMENT !== 'production' ? greenlock.stagingServerUrl : greenlock.productionServerUrl,
+    server: debug ? greenlock.stagingServerUrl : greenlock.productionServerUrl,
     configDir: '/tmp/acme/etc',
     email: EMAIL,
     agreeTos: true,
@@ -184,12 +192,4 @@ if (ENVIRONMENT !== 'development') {
   https.createServer(lex.httpsOptions, lex.middleware(app)).listen(HTTPS_PORT, function createServer() {
     console.log('Listening for ACME tls-sni-01 challenges and serve app on', this.address());
   });
-}
-
-if (ENVIRONMENT === 'development') {
-  const httpServer = http.createServer(app);
-  httpServer.on('listening', () => {
-    console.log(`Express server listening on port ${HTTP_PORT}`);
-  });
-  httpServer.listen(HTTP_PORT);
 }

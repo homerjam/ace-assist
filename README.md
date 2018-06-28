@@ -217,6 +217,7 @@ Use these steps to get up and running in development.
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=development" \
+        -e "SSL_DISABLED=true" \
         -e "EMAIL=email@domain.com" \
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
@@ -244,6 +245,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         -e "HTTP_PORT=49001" \
         -e "HTTPS_PORT=49002" \
         -e "ENVIRONMENT=production" \
+        -e "SSL_DISABLED=false" \
         -e "EMAIL=email@domain.com" \
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
@@ -270,6 +272,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
     HTTP_PORT
     HTTPS_PORT
     ENVIRONMENT
+    SSL_DISABLED
     EMAIL
     DOMAINS
 	USERNAME

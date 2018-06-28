@@ -47,9 +47,8 @@ COPY . /app
 # Make logentries script executable
 RUN chmod +x /app/scripts/logentries.sh
 
-# Expose ports for express app
+# Expose default port for express app
 EXPOSE 49001
-EXPOSE 49002
 
 # Boot with supervisor
 CMD ["/usr/bin/supervisord"]
