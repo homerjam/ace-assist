@@ -1,5 +1,21 @@
 FROM ubuntu:16.04
 
+ENV HTTP_PORT=49001
+ENV HTTPS_PORT=49002
+ENV ENVIRONMENT=production
+ENV SSL_DISABLED=false
+ENV EMAIL=
+ENV DOMAINS=
+ENV USERNAME=
+ENV PASSWORD=
+ENV UV_THREADPOOL_SIZE=4
+ENV CACHE_MAX_SIZE=1000
+ENV ACCESS_KEY_ID=
+ENV SECRET_ACCESS_KEY=
+ENV ENDPOINT=s3.amazonaws.com
+ENV BUCKET=
+ENV FFMPEG_VERSION=4.0
+
 RUN apt-get update; apt-get upgrade -y; apt-get clean
 
 # Install common dependencies
@@ -17,7 +33,6 @@ RUN apt-get update && apt-get install -y nodejs
 RUN add-apt-repository --yes ppa:stebbins/handbrake-releases && apt-get update -qq && apt-get install -qq handbrake-cli
 
 # Install ffmpeg
-ENV FFMPEG_VERSION=4.0
 RUN add-apt-repository multiverse && apt-get update && apt-get install -y libass-dev libfreetype6-dev libsdl2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev zlib1g-dev libssl-dev libwebp-dev nasm yasm libx264-dev libx265-dev libvpx-dev libfdk-aac-dev libmp3lame-dev libopus-dev && \
   DIR=$(mktemp -d) && cd ${DIR} && \
   curl -s http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz | tar zxvf - -C . && \
@@ -47,8 +62,9 @@ COPY . /app
 # Make logentries script executable
 RUN chmod +x /app/scripts/logentries.sh
 
-# Expose default port for express app
-EXPOSE 49001
+# Expose ports for express app
+EXPOSE ${HTTP_PORT}
+EXPOSE ${HTTPS_PORT}
 
 # Boot with supervisor
 CMD ["/usr/bin/supervisord"]
