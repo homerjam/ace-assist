@@ -12,17 +12,18 @@
   "repository": "https://github.com/studiothomas/ace-assist.git",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --expose-gc index.js"
+    "start": "nodemon --expose-gc index.js",
+    "dev": "npm start"
   },
   "dependencies": {
-    "aws-sdk": "^2.257.1",
+    "aws-sdk": "^2.287.0",
     "axios": "^0.18.0",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.3",
     "coffee-script": "^1.12.7",
-    "compression": "^1.7.1",
+    "compression": "^1.7.3",
     "connect-expires": "^0.0.2",
-    "connect-multiparty": "^2.1.0",
+    "connect-multiparty": "^2.1.1",
     "console-stamp": "^0.2.6",
     "dateformat": "^3.0.2",
     "diskusage": "^0.2.4",
@@ -33,14 +34,14 @@
     "filru": "github:homerjam/filru#stream",
     "fluent-ffmpeg": "^2.1.2",
     "forever": "^0.15.3",
-    "greenlock": "^2.2.19",
-    "handbrake-js": "^3.0.3",
-    "helmet": "^3.12.1",
+    "greenlock": "^2.3.8",
+    "handbrake-js": "^3.0.6",
+    "helmet": "^3.13.0",
     "le-challenge-fs": "^2.0.8",
     "le-challenge-sni": "^2.0.1",
-    "le-store-certbot": "^2.1.2",
+    "le-store-certbot": "^2.2.0",
     "lodash": "^4.17.10",
-    "method-override": "^2.3.10",
+    "method-override": "^3.0.0",
     "mime": "^2.3.1",
     "mv": "^2.1.1",
     "node-vibrant": "^3.0.0",
@@ -52,13 +53,13 @@
     "recursive-readdir": "^2.2.2",
     "rimraf": "^2.6.2",
     "send-seekable": "^1.0.4",
-    "sharp": "^0.20.3",
-    "systeminformation": "^3.41.4",
-    "uuid": "^3.1.0"
+    "sharp": "^0.20.5",
+    "systeminformation": "^3.42.8",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.12.0"
+    "eslint": "^5.3.0",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-plugin-import": "^2.13.0"
   }
 }
