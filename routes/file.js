@@ -34,7 +34,8 @@ module.exports = ({
     '/:slug/file/upload?*',
     authMiddleware,
     (req, res) => {
-      const flow = new Flow(tmpDir);
+      const slug = req.params.slug;
+      const flow = new Flow(path.join(tmpDir, slug));
 
       flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalChunks, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
         .then((result) => {
@@ -53,8 +54,7 @@ module.exports = ({
     multiparty,
     asyncMiddleware(async (req, res) => {
       const slug = req.params.slug;
-
-      const flow = new Flow(tmpDir);
+      const flow = new Flow(path.join(tmpDir, slug));
 
       let options = {};
 
@@ -74,7 +74,7 @@ module.exports = ({
         return;
       }
 
-      let tmpFile = path.join(tmpDir, upload.filename);
+      let tmpFile = path.join(tmpDir, slug, upload.filename);
 
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
@@ -113,7 +113,7 @@ module.exports = ({
           },
         ];
 
-        const extrasPath = path.join(tmpDir, file.name);
+        const extrasPath = path.join(tmpDir, slug, file.name);
         let extrasFiles = [];
         let extrasSize = 0;
         try {
@@ -161,6 +161,11 @@ module.exports = ({
     })
   );
 
+  app.options('/:slug/file/delete', (req, res) => {
+    res.status(200);
+    res.send();
+  });
+
   app.post(
     '/:slug/file/delete',
     authMiddleware,
@@ -172,6 +177,7 @@ module.exports = ({
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
         fileNames = fileNames.filter(fileName => fileName);
+        fileNames = fileNames.map(fileName => fileName.split('.')[0]);
 
         const originalFilePrefixes = fileNames.map(fileName => `${slug}/${fileName}.`);
         const extraFilePrefixes = fileNames.map(fileName => `${slug}/${fileName}/`);
