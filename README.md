@@ -26,7 +26,7 @@ The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) lib
 | `dzi` | Deep Zoom image options |
 
 &nbsp;
-### /:slug/file/delete `[DELETE]`
+### /:slug/file/delete `[POST]`
 
 | Param | Description |
 | --- | --- |
@@ -34,7 +34,7 @@ The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) lib
 
 | Data | Description |
 | --- | --- |
-| `files[]` | Array of filenames to delete |
+| `fileNames[]` | Array of filenames to delete |
 
 &nbsp;
 ### /:slug/transform/:options/:fileName `[GET]`

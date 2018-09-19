@@ -16,14 +16,14 @@
     "dev": "npm start"
   },
   "dependencies": {
-    "aws-sdk": "^2.287.0",
+    "aws-sdk": "^2.317.0",
     "axios": "^0.18.0",
-    "bluebird": "^3.5.1",
+    "bluebird": "^3.5.2",
     "body-parser": "^1.18.3",
     "coffee-script": "^1.12.7",
     "compression": "^1.7.3",
     "connect-expires": "^0.0.2",
-    "connect-multiparty": "^2.1.1",
+    "connect-multiparty": "^2.2.0",
     "console-stamp": "^0.2.6",
     "dateformat": "^3.0.2",
     "diskusage": "^0.2.4",
@@ -34,14 +34,14 @@
     "filru": "github:homerjam/filru#stream",
     "fluent-ffmpeg": "^2.1.2",
     "forever": "^0.15.3",
-    "greenlock": "^2.3.8",
+    "greenlock": "^2.4.2",
     "handbrake-js": "^3.0.6",
     "helmet": "^3.13.0",
     "le-acme-core": "^2.1.3",
     "le-challenge-fs": "^2.0.8",
     "le-challenge-sni": "^2.0.1",
     "le-store-certbot": "^2.2.0",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "method-override": "^3.0.0",
     "mime": "^2.3.1",
     "mv": "^2.1.1",
@@ -54,13 +54,13 @@
     "recursive-readdir": "^2.2.2",
     "rimraf": "^2.6.2",
     "send-seekable": "^1.0.4",
-    "sharp": "^0.20.5",
-    "systeminformation": "^3.42.8",
+    "sharp": "^0.20.8",
+    "systeminformation": "^3.45.6",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "eslint": "^5.3.0",
-    "eslint-config-airbnb-base": "^13.0.0",
-    "eslint-plugin-import": "^2.13.0"
+    "eslint": "^5.6.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0"
   }
 }
