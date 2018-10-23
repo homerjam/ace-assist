@@ -28,11 +28,11 @@ const EMAIL = process.env.EMAIL || '';
 const DOMAINS = process.env.DOMAINS || '';
 const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
-const CACHE_MAX_SIZE = parseInt(process.env.CACHE_MAX_SIZE || 100, 10) * 1024 * 1024; // 100mb
 const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
 const ENDPOINT = process.env.ENDPOINT;
 const BUCKET = process.env.BUCKET;
+const CDN = process.env.CDN;
 
 process.on('unhandledRejection', result => console.error('unhandledRejection:', result));
 
@@ -97,17 +97,12 @@ const config = {
   authMiddleware,
   logDir: path.join(__dirname, 'log'),
   tmpDir: path.join(__dirname, 'tmp'),
-  cacheDir: path.join(__dirname, 'cache'),
-  cacheMaxSize: CACHE_MAX_SIZE,
   accessKeyId: ACCESS_KEY_ID,
   secretAccessKey: SECRET_ACCESS_KEY,
   endpoint: ENDPOINT,
   bucket: BUCKET,
+  cdn: CDN,
 };
-
-if (!fs.existsSync(config.cacheDir)) {
-  fs.mkdirSync(config.cacheDir);
-}
 
 if (!fs.existsSync(config.tmpDir)) {
   fs.mkdirSync(config.tmpDir);

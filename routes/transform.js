@@ -3,7 +3,7 @@ const fs = Promise.promisifyAll(require('fs'));
 const stream = require('stream');
 const _ = require('lodash');
 const si = require('systeminformation');
-const Filru = require('filru');
+const XXH = require('xxhashjs');
 const AWS = require('aws-sdk');
 const Image = require('../lib/image');
 const AV = require('../lib/av');
@@ -11,11 +11,13 @@ const Logger = require('../lib/logger');
 const asyncMiddleware = require('../lib/async-middleware');
 
 const MIN_AVAIL_MEM = 1024 * 1024 * 500; // 500 megabytes
+const HASH_SEED = 0xabcd;
 
-// let filru;
 let s3;
 
-const transformHandler = async ({ endpoint, bucket }, req, res) => {
+const hash = key => XXH.h64(key, HASH_SEED).toString(16);
+
+const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   try {
     si.mem((mem) => {
       if (mem.available < MIN_AVAIL_MEM) {
@@ -133,40 +135,30 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
 
   const url = mode === 'local' ? `http://${bucket}.${endpoint}/${file}` : `http://${file}`;
   const key = `[${url}](${JSON.stringify(_.toPairs(settings).sort())})`;
-  const hashKey = `${Filru.hash(key)}.${settings.outputFormat}`;
+  const hashKey = `${hash(key)}.${settings.outputFormat}`;
 
   let response;
   let cachedResponse = false;
   let time = process.hrtime();
 
   try {
-    // response = await filru.get(key);
-
-    // response = (await s3.getObject({
-    //   Bucket: bucket,
-    //   Key: `_cache/${hashKey}`,
-    // }).promise()).Body;
-
     const object = await s3.headObject({
       Bucket: bucket,
       Key: `_cache/${hashKey}`,
     }).promise();
-    response = s3.getObject({
-      Bucket: bucket,
-      Key: `_cache/${hashKey}`,
-    }).createReadStream();
-    response.length = object.ContentLength;
 
-    if (response instanceof Buffer && !response.length) {
-      // await filru.del(key);
-      response = null;
+    if (cdn) {
+      response = { redirect: `${cdn}/_cache/${hashKey}`, object };
+    } else {
+      response = s3.getObject({
+        Bucket: bucket,
+        Key: `_cache/${hashKey}`,
+      }).createReadStream();
+      response.length = object.ContentLength;
     }
-    if (response instanceof stream.Readable && !response.readable) {
-      // await filru.del(key);
-      response = null;
-    }
+
   } catch (error) {
-    if (!/(ENOENT|NotFound|NoSuchKey)/.test(error.code)) {
+    if (!/(NotFound|NoSuchKey)/.test(error.code)) {
       console.error('Error:', error);
     }
   }
@@ -200,8 +192,6 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
       console.error('buffer: error:', url);
       return;
     }
-
-    // filru.set(key, result);
 
     s3.upload({
       Bucket: bucket,
@@ -244,6 +234,11 @@ const transformHandler = async ({ endpoint, bucket }, req, res) => {
     }
 
     res.sendSeekable(response, { length: response.length });
+    return;
+  }
+
+  if (response.redirect) {
+    res.redirect(301, response.redirect);
     return;
   }
 
@@ -293,15 +288,8 @@ module.exports = ({
   secretAccessKey,
   endpoint,
   bucket,
-  cacheDir,
-  cacheMaxSize,
+  cdn,
 }) => {
-
-  // filru = new Filru({
-  //   dir: cacheDir,
-  //   maxBytes: cacheMaxSize,
-  // });
-  // filru.start();
 
   s3 = new AWS.S3({
     accessKeyId,
@@ -311,6 +299,7 @@ module.exports = ({
   const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, {
     endpoint,
     bucket,
+    cdn,
   }));
 
   app.get('/:slug/proxy/transform/*', transformHandlerAsync);

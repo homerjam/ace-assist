@@ -190,11 +190,11 @@ You can add a `nodemon.json` file to your project to configure the public folder
     {
         "watch": ["routes", "lib"],
         "env": {
-            "CACHE_MAX_SIZE": 100,
             "ACCESS_KEY_ID": "ACCESS_KEY_ID",
             "SECRET_ACCESS_KEY": "SECRET_ACCESS_KEY",
             "ENDPOINT": "ENDPOINT"
-            "BUCKET": "BUCKET"
+            "BUCKET": "BUCKET",
+            "CDN": "CDN"
         }
     }
 
@@ -211,7 +211,6 @@ Use these steps to get up and running in development.
 
 	# run container in interactive mode from image and bind ports, volumes
 	$ docker run --name ace-assist -i -p 49001:49001 \
-        -v ~/assist/cache:/app/cache:rw \
         -v ~/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
         -e "HTTP_PORT=49001" \
@@ -223,11 +222,11 @@ Use these steps to get up and running in development.
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
         -e "UV_THREADPOOL_SIZE=64" \
-        -e "CACHE_MAX_SIZE=500" \
         -e "ACCESS_KEY_ID=ACCESS_KEY_ID" \
         -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
         -e "ENDPOINT=ENDPOINT" \
         -e "BUCKET=BUCKET" \
+        -e "CDN=CDN" \
         studiothomas/ace-assist
 
 	# test in browser
@@ -239,7 +238,6 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
 
 	# run container in daemon mode from image and bind ports, volumes with environment variables
 	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
-        -v /var/assist/cache:/app/cache:rw \
         -v /var/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
         -e "HTTP_PORT=49001" \
@@ -251,18 +249,17 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
         -e "UV_THREADPOOL_SIZE=64" \
-        -e "CACHE_MAX_SIZE=500" \
         -e "ACCESS_KEY_ID=ACCESS_KEY_ID" \
         -e "SECRET_ACCESS_KEY=SECRET_ACCESS_KEY" \
         -e "ENDPOINT=ENDPOINT" \
         -e "BUCKET=BUCKET" \
+        -e "CDN=CDN" \
         studiothomas/ace-assist
 
     # using .env file
 	$ source .env; docker run --name ace-assist -d \
         -p 80:$HTTP_PORT -p 443:$HTTPS_PORT \
         --env-file=.env \
-        -v /var/assist/cache:/app/cache:rw \
         -v /var/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
         studiothomas/ace-assist
@@ -278,11 +275,11 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
 	USERNAME
 	PASSWORD
     UV_THREADPOOL_SIZE
-    CACHE_MAX_SIZE
     ACCESS_KEY_ID
     SECRET_ACCESS_KEY
     ENDPOINT
     BUCKET
+    CDN
 
 ### Useful commands
 
