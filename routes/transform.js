@@ -147,7 +147,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
       Key: `_cache/${hashKey}`,
     }).promise();
 
-    if (cdn) {
+    if (cdn && !req.headers.origin) {
       response = { redirect: `${cdn}/_cache/${hashKey}`, object };
     } else {
       response = s3.getObject({
@@ -238,7 +238,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   }
 
   if (response.redirect) {
-    res.redirect(301, response.redirect);
+    res.redirect(302, response.redirect);
     return;
   }
 
