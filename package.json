@@ -4,12 +4,12 @@
   "title": "ACE Assist",
   "description": "An image store with resizing and PDF generation",
   "author": {
-    "name": "Studio Thomas",
-    "email": "hello@studiothomas.co.uk",
-    "url": "http://studiothomas.co.uk"
+    "name": "James Homer",
+    "email": "hello@homerjam.es",
+    "url": "https://homerjam.es"
   },
   "license": "SEE LICENSE IN LICENSE",
-  "repository": "https://github.com/studiothomas/ace-assist.git",
+  "repository": "https://github.com/homerjam/ace-assist.git",
   "main": "index.js",
   "scripts": {
     "start": "nodemon --expose-gc index.js",

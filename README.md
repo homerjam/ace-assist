@@ -201,10 +201,10 @@ You can add a `nodemon.json` file to your project to configure the public folder
 Use these steps to get up and running in development.
 
 	# build docker image
-	$ docker build -t studiothomas/ace-assist .
+	$ docker build -t homerjam/ace-assist .
 
     # or bypassing build cache
-	$ docker build --no-cache -t studiothomas/ace-assist .
+	$ docker build --no-cache -t homerjam/ace-assist .
 
 	# stop/remove previous container if exists
 	$ docker stop ace-assist; docker rm ace-assist
@@ -227,7 +227,7 @@ Use these steps to get up and running in development.
         -e "ENDPOINT=ENDPOINT" \
         -e "BUCKET=BUCKET" \
         -e "CDN=CDN" \
-        studiothomas/ace-assist
+        homerjam/ace-assist
 
 	# test in browser
 	http://localhost:49001
@@ -254,7 +254,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         -e "ENDPOINT=ENDPOINT" \
         -e "BUCKET=BUCKET" \
         -e "CDN=CDN" \
-        studiothomas/ace-assist
+        homerjam/ace-assist
 
     # using .env file
 	$ source .env; docker run --name ace-assist -d \
@@ -262,7 +262,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         --env-file=.env \
         -v /var/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
-        studiothomas/ace-assist
+        homerjam/ace-assist
 
 ### Environment variables
 
