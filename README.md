@@ -210,7 +210,8 @@ Use these steps to get up and running in development.
 	$ docker stop ace-assist; docker rm ace-assist
 
 	# run container in interactive mode from image and bind ports, volumes
-	$ docker run --name ace-assist -i -p 49001:49001 \
+	$ docker run --name ace-assist -i \
+        -p 49001:49001 \
         -v ~/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
         -e "HTTP_PORT=49001" \
@@ -227,6 +228,14 @@ Use these steps to get up and running in development.
         -e "ENDPOINT=ENDPOINT" \
         -e "BUCKET=BUCKET" \
         -e "CDN=CDN" \
+        homerjam/ace-assist
+
+    # run container in interactive mode from image and bind ports, volumes - using .env file
+	$ source .env; docker run --name ace-assist -i \
+        -p 49001:49001 \
+        --env-file=.env \
+        -v ~/assist/tmp:/app/tmp:rw \
+        -v /tmp/acme:/tmp/acme:rw \
         homerjam/ace-assist
 
 	# test in browser

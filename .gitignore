@@ -5,6 +5,7 @@
 .vscode
 nodemon.json
 node_modules
+app
 cache
 tmp
 tests

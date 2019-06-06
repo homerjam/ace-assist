@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 ENV HTTP_PORT=49001
 ENV HTTPS_PORT=49002
@@ -14,19 +14,16 @@ ENV SECRET_ACCESS_KEY=
 ENV ENDPOINT=s3.amazonaws.com
 ENV BUCKET=
 ENV CDN=
-ENV FFMPEG_VERSION=4.0
+ENV NODE_VERSION=12
+ENV FFMPEG_VERSION=4.1.3
 
 RUN apt-get update; apt-get upgrade -y; apt-get clean
 
 # Install common dependencies
 RUN apt-get update && apt-get install -y --fix-missing autoconf automake build-essential cmake pkg-config software-properties-common texinfo sudo wget curl git supervisor
 
-# Install logentries agent
-# RUN apt-get update && apt-get install -y python-setuptools
-# RUN wget https://raw.github.com/logentries/le/master/install/linux/logentries_install.sh && sudo bash logentries_install.sh
-
 # Install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
 RUN apt-get update && apt-get install -y nodejs
 
 # Install handbrake-cli
@@ -44,7 +41,7 @@ RUN add-apt-repository multiverse && apt-get update && apt-get install -y libass
 
 # Add supervisor configuration
 RUN mkdir -p /var/log/supervisor
-ADD scripts/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create app directory and change working directory into it
 RUN mkdir -p /app
@@ -58,9 +55,6 @@ RUN npm install --unsafe-perm
 
 # Copy files to app directory
 COPY . /app
-
-# Make logentries script executable
-RUN chmod +x /app/scripts/logentries.sh
 
 # Expose ports for express app
 EXPOSE ${HTTP_PORT}
