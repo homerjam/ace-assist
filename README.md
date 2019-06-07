@@ -316,6 +316,9 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
     # Mount remote folder locally (requires sshfs/osxfuse)
     $ sshfs user@remotehost:/mnt/vol1 ~/mnt/assist -ovolname=ASSIST
 
+    # Test transform
+    $ docker run -v /tmp:/app/tmp homerjam/ace-assist node scripts/transform.js /app/tmp/test.mp4 test "{\"outputFormat\":\"mp4\",\"inputFormat\":\"mp4\",\"h\":360,\"bv\":1000}"
+
 ### Backup Script
 
     #!/bin/bash
