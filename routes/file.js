@@ -24,29 +24,35 @@ module.exports = ({
   endpoint,
   bucket,
 }) => {
-
   app.options('/:slug/file/upload?*', (req, res) => {
     res.status(200);
     res.send();
   });
 
-  app.get(
-    '/:slug/file/upload?*',
-    authMiddleware,
-    (req, res) => {
-      const slug = req.params.slug;
-      const flow = new Flow(path.join(tmpDir, slug));
+  app.get('/:slug/file/upload?*', authMiddleware, (req, res) => {
+    const slug = req.params.slug;
+    const flow = new Flow(path.join(tmpDir, slug));
 
-      flow.checkChunk(req.query.flowChunkNumber, req.query.flowChunkSize, req.query.flowTotalChunks, req.query.flowTotalSize, req.query.flowIdentifier, req.query.flowFilename)
-        .then((result) => {
+    flow
+      .checkChunk(
+        req.query.flowChunkNumber,
+        req.query.flowChunkSize,
+        req.query.flowTotalChunks,
+        req.query.flowTotalSize,
+        req.query.flowIdentifier,
+        req.query.flowFilename
+      )
+      .then(
+        result => {
           res.status(200);
           res.send(result);
-        }, (error) => {
+        },
+        error => {
           res.status(204);
           res.send(error);
-        });
-    }
-  );
+        }
+      );
+  });
 
   app.post(
     '/:slug/file/upload?*',
@@ -64,7 +70,15 @@ module.exports = ({
         //
       }
 
-      const upload = await flow.saveChunk(req.files, req.body.flowChunkNumber, req.body.flowChunkSize, req.body.flowTotalChunks, req.body.flowTotalSize, req.body.flowIdentifier, req.body.flowFilename);
+      const upload = await flow.saveChunk(
+        req.files,
+        req.body.flowChunkNumber,
+        req.body.flowChunkSize,
+        req.body.flowTotalChunks,
+        req.body.flowTotalSize,
+        req.body.flowIdentifier,
+        req.body.flowFilename
+      );
 
       res.header('Access-Control-Allow-Origin', '*');
 
@@ -79,7 +93,10 @@ module.exports = ({
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-        const type = path.parse(tmpFile).ext.toLowerCase().replace('.', '');
+        const type = path
+          .parse(tmpFile)
+          .ext.toLowerCase()
+          .replace('.', '');
 
         let processResult;
         let metadata = {};
@@ -103,8 +120,7 @@ module.exports = ({
         const file = path.parse(tmpFile);
 
         const name = uuid.v1();
-        const ext = file.ext.toLowerCase()
-          .replace('jpeg', 'jpg');
+        const ext = file.ext.toLowerCase().replace('jpeg', 'jpg');
 
         const objects = [
           {
@@ -123,14 +139,16 @@ module.exports = ({
           //
         }
 
-        extrasFiles.forEach((file) => {
+        extrasFiles.forEach(file => {
           objects.push({
             file,
             key: `${slug}/${name}${file.replace(extrasPath, '')}`,
           });
         });
 
-        const results = await Promise.all(objects.map(object => s3.upload(object.file, object.key)));
+        const results = await Promise.all(
+          objects.map(object => s3.upload(object.file, object.key))
+        );
 
         const result = results[0];
 
@@ -148,12 +166,14 @@ module.exports = ({
         };
         result.metadata = metadata;
 
-        await Promise.all(objects.map(object => fs.unlinkAsync(object.file))
-          .concat(rimrafAsync(extrasPath)));
+        await Promise.all(
+          objects
+            .map(object => fs.unlinkAsync(object.file))
+            .concat(rimrafAsync(extrasPath))
+        );
 
         res.status(200);
         res.send(result);
-
       } catch (error) {
         console.error(error);
         Logger.error(res, 'upload', error);
@@ -179,8 +199,12 @@ module.exports = ({
         fileNames = fileNames.filter(fileName => fileName);
         fileNames = fileNames.map(fileName => fileName.split('.')[0]);
 
-        const originalFilePrefixes = fileNames.map(fileName => `${slug}/${fileName}.`);
-        const extraFilePrefixes = fileNames.map(fileName => `${slug}/${fileName}/`);
+        const originalFilePrefixes = fileNames.map(
+          fileName => `${slug}/${fileName}.`
+        );
+        const extraFilePrefixes = fileNames.map(
+          fileName => `${slug}/${fileName}/`
+        );
 
         const prefixes = originalFilePrefixes.concat(extraFilePrefixes);
 
@@ -188,7 +212,6 @@ module.exports = ({
 
         res.status(200);
         res.send(results);
-
       } catch (error) {
         console.error(error);
         Logger.error(res, 'delete', error);
@@ -201,10 +224,14 @@ module.exports = ({
     asyncMiddleware(async (req, res) => {
       const fileUrl = `http://${bucket}.${endpoint}/${req.params.slug}/${req.params.fileName}`;
 
-      const stream = (await axios.get(fileUrl, { responseType: 'stream' })).data;
+      const stream = (await axios.get(fileUrl, { responseType: 'stream' }))
+        .data;
 
       res.setHeader('Content-Type', 'application/octet-stream');
-      res.setHeader('Content-Disposition', `attachment; filename=${req.params.originalFileName}`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename=${req.params.originalFileName}`
+      );
 
       stream.pipe(res);
     })
@@ -215,14 +242,17 @@ module.exports = ({
     asyncMiddleware(async (req, res) => {
       const fileUrl = `http://${bucket}.${endpoint}/${req.params.slug}/${req.params.fileName}`;
 
-      const stream = (await axios.get(fileUrl, { responseType: 'stream' })).data;
+      const stream = (await axios.get(fileUrl, { responseType: 'stream' }))
+        .data;
 
-      const type = path.parse(req.params.fileName).ext.toLowerCase().replace('.', '');
+      const type = path
+        .parse(req.params.fileName)
+        .ext.toLowerCase()
+        .replace('.', '');
 
       res.setHeader('Content-Type', mime.getType(type));
 
       stream.pipe(res);
     })
   );
-
 };

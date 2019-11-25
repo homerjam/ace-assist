@@ -6,19 +6,23 @@ const sharp = require('sharp');
 const Logger = require('../lib/logger');
 const asyncMiddleware = require('../lib/async-middleware');
 
-const getUrls = async (fonts) => {
+const getUrls = async fonts => {
   const result = {};
 
   const promises = [];
   _.forEach(fonts, (url, id) => {
-    promises.push(new Promise(async (resolve, reject) => {
-      try {
-        result[id] = (await axios.get(url, { responseType: 'arraybuffer' })).data;
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    }));
+    promises.push(
+      new Promise(async (resolve, reject) => {
+        try {
+          result[id] = (
+            await axios.get(url, { responseType: 'arraybuffer' })
+          ).data;
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      })
+    );
   });
 
   await Promise.settle(promises);
@@ -78,12 +82,7 @@ const addPage = (config, doc, obj, page, pi) => {
   return Promise.settle(items);
 };
 
-module.exports = ({
-  app,
-  endpoint,
-  bucket,
-}) => {
-
+module.exports = ({ app, endpoint, bucket }) => {
   const config = {
     endpoint,
     bucket,
@@ -136,7 +135,9 @@ module.exports = ({
       doc.addPage();
     });
 
-    const pages = obj.pages.map((page, pi) => addPage(config, doc, obj, page, pi));
+    const pages = obj.pages.map((page, pi) =>
+      addPage(config, doc, obj, page, pi)
+    );
 
     await Promise.settle(pages);
 
@@ -152,9 +153,12 @@ module.exports = ({
   });
 
   app.get('/:slug/pdf/test', (req, res) => {
-    res.status(200).send(`<form method="POST" action="/${req.params.slug}/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>`);
+    res
+      .status(200)
+      .send(
+        `<form method="POST" action="/${req.params.slug}/pdf/download"><button type="submit">Submit</button><br><textarea name="payload"></textarea></form>`
+      );
   });
 
   app.post('/:slug/pdf/download', pdfHandler);
-
 };

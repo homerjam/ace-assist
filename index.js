@@ -21,7 +21,9 @@ const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
-const SSL_DISABLED = process.env.SSL_DISABLED ? JSON.parse(process.env.SSL_DISABLED) : false;
+const SSL_DISABLED = process.env.SSL_DISABLED
+  ? JSON.parse(process.env.SSL_DISABLED)
+  : false;
 const HTTP_PORT = process.env.HTTP_PORT || 49001;
 const HTTPS_PORT = process.env.HTTPS_PORT || 49002;
 const EMAIL = process.env.EMAIL || '';
@@ -34,40 +36,50 @@ const ENDPOINT = process.env.ENDPOINT;
 const BUCKET = process.env.BUCKET;
 const CDN = process.env.CDN;
 
-process.on('unhandledRejection', result => console.error('unhandledRejection:', result));
+process.on('unhandledRejection', result =>
+  console.error('unhandledRejection:', result)
+);
 
-passport.use(new BasicStrategy(
-  {
-    realm: 'ACE Assist',
-  },
-  (username, password, done) => {
-    if (username !== USERNAME) {
-      return done(null, false);
+passport.use(
+  new BasicStrategy(
+    {
+      realm: 'ACE Assist',
+    },
+    (username, password, done) => {
+      if (username !== USERNAME) {
+        return done(null, false);
+      }
+      if (!passwordHash.verify(PASSWORD, password)) {
+        return done(null, false);
+      }
+      return done(null, true);
     }
-    if (!passwordHash.verify(PASSWORD, password)) {
-      return done(null, false);
-    }
-    return done(null, true);
-  }
-));
+  )
+);
 
 const app = express();
 
-app.use(bodyParser.urlencoded({
-  extended: true,
-}));
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  })
+);
 app.use(bodyParser.json());
 app.use(methodOverride());
-app.use(errorHandler({
-  showStack: true,
-  dumpExceptions: true,
-}));
+app.use(
+  errorHandler({
+    showStack: true,
+    dumpExceptions: true,
+  })
+);
 app.use(helmet());
 app.use(compression());
-app.use(expires({
-  pattern: /^(.*)$/,
-  duration: 1000 * 60 * 60 * 24 * 365,
-}));
+app.use(
+  expires({
+    pattern: /^(.*)$/,
+    duration: 1000 * 60 * 60 * 24 * 365,
+  })
+);
 app.use(sendSeekable);
 app.use(passport.initialize());
 
@@ -78,7 +90,8 @@ app.use((req, res, next) => {
   };
 
   if (req.headers['access-control-request-headers']) {
-    headers['Access-Control-Allow-Headers'] = req.headers['access-control-request-headers'];
+    headers['Access-Control-Allow-Headers'] =
+      req.headers['access-control-request-headers'];
   }
 
   res.set(headers);
@@ -134,14 +147,18 @@ app.get('/robots.txt', (req, res) => {
   res.send('User-agent: *\nDisallow:');
 });
 
-app.use('/', proxy(`${config.bucket}.${config.endpoint}`, {
-  limit: '500mb',
-}));
+app.use(
+  '/',
+  proxy(`${config.bucket}.${config.endpoint}`, {
+    limit: '500mb',
+  })
+);
 
 const redirectHttps = (req, res, next) => {
-  if (req.connection.encrypted
-    || req.protocol === 'https'
-    || req.headers['x-forwarded-proto'] === 'https'
+  if (
+    req.connection.encrypted ||
+    req.protocol === 'https' ||
+    req.headers['x-forwarded-proto'] === 'https'
   ) {
     next();
     return;
@@ -170,9 +187,15 @@ if (!SSL_DISABLED && ENVIRONMENT !== 'development') {
 
   const lex = greenlock.create({
     version: 'draft-11',
-    store: require('le-store-certbot').create({ webrootPath: '/tmp/acme/var', debug }),
+    store: require('le-store-certbot').create({
+      webrootPath: '/tmp/acme/var',
+      debug,
+    }),
     challenges: {
-      'http-01': require('le-challenge-fs').create({ webrootPath: '/tmp/acme/var', debug }),
+      'http-01': require('le-challenge-fs').create({
+        webrootPath: '/tmp/acme/var',
+        debug,
+      }),
       'tls-sni-01': require('le-challenge-sni').create({ debug }),
       'tls-sni-02': require('le-challenge-sni').create({ debug }),
     },
@@ -185,11 +208,18 @@ if (!SSL_DISABLED && ENVIRONMENT !== 'development') {
     debug,
   });
 
-  http.createServer(lex.middleware(redirectHttps)).listen(HTTP_PORT, function createServer() {
-    console.log('Listening for ACME http-01 challenges on', this.address());
-  });
+  http
+    .createServer(lex.middleware(redirectHttps))
+    .listen(HTTP_PORT, function createServer() {
+      console.log('Listening for ACME http-01 challenges on', this.address());
+    });
 
-  https.createServer(lex.httpsOptions, lex.middleware(app)).listen(HTTPS_PORT, function createServer() {
-    console.log('Listening for ACME tls-sni-01 challenges and serve app on', this.address());
-  });
+  https
+    .createServer(lex.httpsOptions, lex.middleware(app))
+    .listen(HTTPS_PORT, function createServer() {
+      console.log(
+        'Listening for ACME tls-sni-01 challenges and serve app on',
+        this.address()
+      );
+    });
 }

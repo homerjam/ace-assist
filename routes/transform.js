@@ -19,13 +19,15 @@ const hash = key => XXH.h64(key, HASH_SEED).toString(16);
 
 const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   try {
-    si.mem((mem) => {
+    si.mem(mem => {
       if (mem.available < MIN_AVAIL_MEM) {
         global.gc();
       }
     });
   } catch (error) {
-    console.error('Couldn\'t collect garbage, please run with --expose-gc option');
+    console.error(
+      "Couldn't collect garbage, please run with --expose-gc option"
+    );
   }
 
   const mode = req.params.fileName ? 'local' : 'proxy';
@@ -69,7 +71,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
       return;
     }
 
-    options.forEach((option) => {
+    options.forEach(option => {
       const optionParts = option.split(/_|:/);
       const key = optionParts[0].toLowerCase();
       const value = optionParts.slice(1).join(':');
@@ -88,10 +90,15 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   settings.slug = slug;
 
   if (mode === 'local') {
-    let fileName = req.params.originalFileName ? `${req.params.fileName}/${req.params.originalFileName}` : req.params.fileName;
+    let fileName = req.params.originalFileName
+      ? `${req.params.fileName}/${req.params.originalFileName}`
+      : req.params.fileName;
     const fileNameParts = fileName.split(/(\.|\/)/);
-    fileName = [2, 7].indexOf(fileNameParts.length) > -1 || (fileNameParts.length === 5 && fileNameParts[1] === '.')
-      ? fileNameParts.slice(0, 3).join('') : fileName;
+    fileName =
+      [2, 7].indexOf(fileNameParts.length) > -1 ||
+      (fileNameParts.length === 5 && fileNameParts[1] === '.')
+        ? fileNameParts.slice(0, 3).join('')
+        : fileName;
     file = `${slug}/${fileName}`;
 
     settings.outputFormat = fileNameParts.slice(-1)[0].toLowerCase();
@@ -101,21 +108,30 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
     if (querySettings) {
       file = req.params[0];
     } else {
-      file = req.params[0].split('/').slice(1).join('/');
+      file = req.params[0]
+        .split('/')
+        .slice(1)
+        .join('/');
       const qs = req.originalUrl.split('?')[1];
       if (qs) {
         file = `${file}?${qs}`;
       }
     }
 
-    settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
+    settings.outputFormat = req.params[0]
+      .split('.')
+      .slice(-1)[0]
+      .toLowerCase();
   }
 
   if (settings.f) {
     settings.outputFormat = settings.f;
   }
 
-  settings.inputFormat = file.split('.').slice(-1)[0].toLowerCase();
+  settings.inputFormat = file
+    .split('.')
+    .slice(-1)[0]
+    .toLowerCase();
 
   const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
   // const logInfo = Logger.info.bind(null, null, logPrefix);
@@ -133,7 +149,10 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
     return;
   }
 
-  const url = mode === 'local' ? `http://${bucket}.${endpoint}/${file}` : `http://${file}`;
+  const url =
+    mode === 'local'
+      ? `http://${bucket}.${endpoint}/${file}`
+      : `http://${file}`;
   const key = `[${url}](${JSON.stringify(_.toPairs(settings).sort())})`;
   const hashKey = `${hash(key)}.${settings.outputFormat}`;
 
@@ -142,21 +161,24 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   let time = process.hrtime();
 
   try {
-    const object = await s3.headObject({
-      Bucket: bucket,
-      Key: `_cache/${hashKey}`,
-    }).promise();
+    const object = await s3
+      .headObject({
+        Bucket: bucket,
+        Key: `_cache/${hashKey}`,
+      })
+      .promise();
 
     if (cdn && !req.headers.origin) {
       response = { redirect: `${cdn}/_cache/${hashKey}`, object };
     } else {
-      response = s3.getObject({
-        Bucket: bucket,
-        Key: `_cache/${hashKey}`,
-      }).createReadStream();
+      response = s3
+        .getObject({
+          Bucket: bucket,
+          Key: `_cache/${hashKey}`,
+        })
+        .createReadStream();
       response.length = object.ContentLength;
     }
-
   } catch (error) {
     if (!/(NotFound|NoSuchKey)/.test(error.code)) {
       console.error('Error:', error);
@@ -183,32 +205,38 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   }
 
   time = process.hrtime(time);
-  time = `${(time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)}ms`;
+  time = `${(time[0] === 0 ? '' : time[0]) +
+    (time[1] / 1000 / 1000).toFixed(2)}ms`;
 
-  const mimeType = Image.mimeTypes[settings.outputFormat] || AV.mimeTypes[settings.outputFormat];
+  const mimeType =
+    Image.mimeTypes[settings.outputFormat] ||
+    AV.mimeTypes[settings.outputFormat];
 
-  const storeResult = (result) => {
+  const storeResult = result => {
     if (!result.length) {
       console.error('buffer: error:', url);
       return;
     }
 
-    s3.upload({
-      Bucket: bucket,
-      Key: `_cache/${hashKey}`,
-      Body: result,
-      ACL: 'public-read',
-      StorageClass: 'REDUCED_REDUNDANCY',
-      Metadata: {},
-      Expires: new Date('2099-01-01'),
-      CacheControl: 'max-age=31536000',
-      ContentType: mimeType,
-      ContentLength: result.length,
-    }, (error) => {
-      if (error) {
-        console.error('s3: error:', error);
+    s3.upload(
+      {
+        Bucket: bucket,
+        Key: `_cache/${hashKey}`,
+        Body: result,
+        ACL: 'public-read',
+        StorageClass: 'REDUCED_REDUNDANCY',
+        Metadata: {},
+        Expires: new Date('2099-01-01'),
+        CacheControl: 'max-age=31536000',
+        ContentType: mimeType,
+        ContentLength: result.length,
+      },
+      error => {
+        if (error) {
+          console.error('s3: error:', error);
+        }
       }
-    });
+    );
   };
 
   res.setHeader('Content-Type', mimeType);
@@ -261,24 +289,28 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   }
 
   if (response.placeholder && settings.ph) {
-    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    res.setHeader(
+      'Cache-Control',
+      'private, no-cache, no-store, must-revalidate'
+    );
     res.setHeader('Expires', '-1');
     res.setHeader('Pragma', 'no-cache');
 
     const stats = await fs.statAsync(response.placeholder);
 
-    res.sendSeekable(fs.createReadStream(response.placeholder), { length: stats.size });
+    res.sendSeekable(fs.createReadStream(response.placeholder), {
+      length: stats.size,
+    });
   }
 
   if (response.promise) {
-    response.promise
-      .then((buffer) => {
-        storeResult(buffer);
+    response.promise.then(buffer => {
+      storeResult(buffer);
 
-        if (!settings.ph) {
-          res.sendSeekable(buffer);
-        }
-      });
+      if (!settings.ph) {
+        res.sendSeekable(buffer);
+      }
+    });
   }
 };
 
@@ -290,24 +322,27 @@ module.exports = ({
   bucket,
   cdn,
 }) => {
-
   s3 = new AWS.S3({
     accessKeyId,
     secretAccessKey,
   });
 
-  const transformHandlerAsync = asyncMiddleware(transformHandler.bind(app, {
-    endpoint,
-    bucket,
-    cdn,
-  }));
+  const transformHandlerAsync = asyncMiddleware(
+    transformHandler.bind(app, {
+      endpoint,
+      bucket,
+      cdn,
+    })
+  );
 
   app.get('/:slug/proxy/transform/*', transformHandlerAsync);
 
-  app.get('/:slug/transform/:options/:fileName/:originalFileName', transformHandlerAsync);
+  app.get(
+    '/:slug/transform/:options/:fileName/:originalFileName',
+    transformHandlerAsync
+  );
 
   app.get('/:slug/transform/:options/:fileName', transformHandlerAsync);
 
   app.get('/:slug/transform/:fileName', transformHandlerAsync);
-
 };
