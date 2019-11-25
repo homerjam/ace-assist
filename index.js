@@ -24,8 +24,8 @@ const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
 const SSL_DISABLED = process.env.SSL_DISABLED
   ? JSON.parse(process.env.SSL_DISABLED)
   : false;
-const HTTP_PORT = process.env.HTTP_PORT || 49001;
-const HTTPS_PORT = process.env.HTTPS_PORT || 49002;
+const HTTP_PORT = process.env.HTTP_PORT || 8080;
+const HTTPS_PORT = process.env.HTTPS_PORT || 8081;
 const EMAIL = process.env.EMAIL || '';
 const DOMAINS = process.env.DOMAINS || '';
 const USERNAME = process.env.USERNAME || 'username';
