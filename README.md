@@ -7,45 +7,48 @@ Resized images are cached but it's advisable to use a CDN in front of the app an
 The app leans heavily on the mighty [sharp](https://github.com/lovell/sharp) library for image operations.
 
 &nbsp;
+
 ### /:slug/file/upload `[POST]`
 
 [Flow.js](https://github.com/flowjs/flow.js) compatible upload target.
 
-| Param | Description |
-| --- | --- |
+| Param  | Description         |
+| ------ | ------------------- |
 | `slug` | Project slug/folder |
 
-| Data | Description |
-| --- | --- |
+| Data      | Description                                  |
+| --------- | -------------------------------------------- |
 | `options` | JSON containing upload options, see below... |
 
 #### Upload options
 
-| Option | Description |
-| --- | --- |
-| `dzi` | Deep Zoom image options |
+| Option | Description             |
+| ------ | ----------------------- |
+| `dzi`  | Deep Zoom image options |
 
 &nbsp;
+
 ### /:slug/file/delete `[POST]`
 
-| Param | Description |
-| --- | --- |
+| Param  | Description         |
+| ------ | ------------------- |
 | `slug` | Project slug/folder |
 
-| Data | Description |
-| --- | --- |
+| Data          | Description                  |
+| ------------- | ---------------------------- |
 | `fileNames[]` | Array of filenames to delete |
 
 &nbsp;
+
 ### /:slug/transform/:options/:fileName `[GET]`
 
 Resizes the requested image on-demand.
 
-| Param | Description |
-| --- | --- |
-| `slug` | Project slug/folder |
-| `filename` | File to be transformed |
-| `options` | Serialized transform options, see below... |
+| Param      | Description                                |
+| ---------- | ------------------------------------------ |
+| `slug`     | Project slug/folder                        |
+| `filename` | File to be transformed                     |
+| `options`  | Serialized transform options, see below... |
 
 ### Transform options
 
@@ -59,40 +62,40 @@ Multiple options can be combined with semi-colons:
 
 **Image Options**
 
-| Option | Description |
-| --- | --- |
-| `f` | Output format: `jpg`, `png`, `webp` |
-| `w` | Width in pixels or as a percentage if < 1 |
-| `h` | Height in pixels or as a percentage if < 1 |
-| `q` | Quality `1-100` (jpeg, webp) |
-| `sm` | Scale mode: `fit` or `fill` |
-| `g` | AUTO Crop method: `north`, `south`, `east`, `west`, `center`, `entropy`, `attention` |
-| `x` | MANUAL Crop method top-left x-axis coord  `0-1` |
-| `y` | MANUAL Crop method top-left y-axis coord  `0-1` |
-| `x2` | MANUAL Crop method bottom-right x-axis coord  `0-1` |
-| `y2` | MANUAL Crop method bottom-right y-axis coord  `0-1` |
-| `bl` | Blur `0.3+` |
-| `sh` | Sharpen `0.5+` |
+| Option | Description                                                                          |
+| ------ | ------------------------------------------------------------------------------------ |
+| `f`    | Output format: `jpg`, `png`, `webp`                                                  |
+| `w`    | Width in pixels or as a percentage if < 1                                            |
+| `h`    | Height in pixels or as a percentage if < 1                                           |
+| `q`    | Quality `1-100` (jpeg, webp)                                                         |
+| `sm`   | Scale mode: `fit` or `fill`                                                          |
+| `g`    | AUTO Crop method: `north`, `south`, `east`, `west`, `center`, `entropy`, `attention` |
+| `x`    | MANUAL Crop method top-left x-axis coord `0-1`                                       |
+| `y`    | MANUAL Crop method top-left y-axis coord `0-1`                                       |
+| `x2`   | MANUAL Crop method bottom-right x-axis coord `0-1`                                   |
+| `y2`   | MANUAL Crop method bottom-right y-axis coord `0-1`                                   |
+| `bl`   | Blur `0.3+`                                                                          |
+| `sh`   | Sharpen `0.5+`                                                                       |
 
 **Video Options**
 
-| Option | Description |
-| --- | --- |
-| `f` | Output format: `mp4`, `webm` |
-| `w` | Width in pixels |
-| `h` | Height in pixels |
-| `bv` | Video bitrate |
-| `ba` | Audio bitrate |
-
+| Option | Description                  |
+| ------ | ---------------------------- |
+| `f`    | Output format: `mp4`, `webm` |
+| `w`    | Width in pixels              |
+| `h`    | Height in pixels             |
+| `bv`   | Video bitrate                |
+| `ba`   | Audio bitrate                |
 
 &nbsp;
+
 ### /:slug/pdf/download `[POST]`
 
 Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](https://github.com/devongovett/pdfkit) to generate PDFs.
 
-| Parameter | Description |
-| --- | --- |
-| `slug` | Project slug/folder |
+| Parameter | Description         |
+| --------- | ------------------- |
+| `slug`    | Project slug/folder |
 
     {
         "fileName": "lightbox.pdf",
@@ -173,8 +176,8 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
 
 ### OSX Dependencies
 
-	# libvips
-	$ brew install homebrew/science/vips --with-imagemagick --with-webp
+    # libvips
+    $ brew install homebrew/science/vips --with-imagemagick --with-webp
 
     # libvips from specific commit
     $ git clone git://github.com/jcupitt/libvips.git; cd libvips; git reset --hard <commit id>; gtkdocize; ./bootstrap.sh; cd ../; rm -Rf libvips;
@@ -200,22 +203,22 @@ You can add a `nodemon.json` file to your project to configure the public folder
 
 Use these steps to get up and running in development.
 
-	# build docker image
-	$ docker build -t homerjam/ace-assist .
+    # build docker image
+    $ docker build -t homerjam/ace-assist .
 
     # or bypassing build cache
-	$ docker build --no-cache -t homerjam/ace-assist .
+    $ docker build --no-cache -t homerjam/ace-assist .
 
-	# stop/remove previous container if exists
-	$ docker stop ace-assist; docker rm ace-assist
+    # stop/remove previous container if exists
+    $ docker stop ace-assist; docker rm ace-assist
 
-	# run container in interactive mode from image and bind ports, volumes
-	$ docker run --name ace-assist -i \
-        -p 49001:49001 \
+    # run container in interactive mode from image and bind ports, volumes
+    $ docker run --name ace-assist -i \
+        -p 8080:8080 \
         -v ~/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
-        -e "HTTP_PORT=49001" \
-        -e "HTTPS_PORT=49002" \
+        -e "HTTP_PORT=8080" \
+        -e "HTTPS_PORT=8081" \
         -e "ENVIRONMENT=development" \
         -e "SSL_DISABLED=true" \
         -e "EMAIL=email@domain.com" \
@@ -231,26 +234,26 @@ Use these steps to get up and running in development.
         homerjam/ace-assist
 
     # run container in interactive mode from image and bind ports, volumes - using .env file
-	$ source .env; docker run --name ace-assist -i \
-        -p 49001:49001 \
+    $ source .env; docker run --name ace-assist -i \
+        -p 8080:8080 \
         --env-file=.env \
         -v ~/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
         homerjam/ace-assist
 
-	# test in browser
-	http://localhost:49001
+    # test in browser
+    http://localhost:8080
 
 ### Usage (production)
 
 Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the default is 4.
 
-	# run container in daemon mode from image and bind ports, volumes with environment variables
-	$ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
+    # run container in daemon mode from image and bind ports, volumes with environment variables
+    $ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
         -v /var/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
-        -e "HTTP_PORT=49001" \
-        -e "HTTPS_PORT=49002" \
+        -e "HTTP_PORT=8080" \
+        -e "HTTPS_PORT=8081" \
         -e "ENVIRONMENT=production" \
         -e "SSL_DISABLED=false" \
         -e "EMAIL=email@domain.com" \
@@ -266,7 +269,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         homerjam/ace-assist
 
     # using .env file
-	$ source .env; docker run --name ace-assist -d \
+    $ source .env; docker run --name ace-assist -d \
         -p 80:$HTTP_PORT -p 443:$HTTPS_PORT \
         --env-file=.env \
         -v /var/assist/tmp:/app/tmp:rw \
@@ -281,8 +284,8 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
     SSL_DISABLED
     EMAIL
     DOMAINS
-	USERNAME
-	PASSWORD
+    USERNAME
+    PASSWORD
     UV_THREADPOOL_SIZE
     ACCESS_KEY_ID
     SECRET_ACCESS_KEY
@@ -292,17 +295,17 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
 
 ### Useful commands
 
-	# Show free space
-	$ df -h
+    # Show free space
+    $ df -h
 
-	# Show largest directories
-	$ du -Sh | sort -rh | head -n 15
+    # Show largest directories
+    $ du -Sh | sort -rh | head -n 15
 
-	# Remove dangling images
-	$ docker rmi $(docker images -q -f dangling=true)
+    # Remove dangling images
+    $ docker rmi $(docker images -q -f dangling=true)
 
-	# Remove untagged images
-	$ docker rmi -f $(docker images | grep "<none>" | awk "{print \$3}")
+    # Remove untagged images
+    $ docker rmi -f $(docker images | grep "<none>" | awk "{print \$3}")
 
     # Resize partition to fill a resized volume on Digital Ocean (replace volume id)
     $ sudo resize2fs /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01
