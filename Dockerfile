@@ -62,3 +62,6 @@ EXPOSE ${HTTPS_PORT}
 
 # Boot with supervisor
 CMD ["/usr/bin/supervisord"]
+
+# Boot with npm
+# CMD ["npm", "start"]

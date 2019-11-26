@@ -212,31 +212,35 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
     Image.mimeTypes[settings.outputFormat] ||
     AV.mimeTypes[settings.outputFormat];
 
-  const storeResult = result => {
+  const storeResult = async result => {
     if (!result.length) {
       console.error('buffer: error:', url);
       return;
     }
 
-    s3.upload(
-      {
-        Bucket: bucket,
-        Key: `_cache/${hashKey}`,
-        Body: result,
-        ACL: 'public-read',
-        StorageClass: 'REDUCED_REDUNDANCY',
-        Metadata: {},
-        Expires: new Date('2099-01-01'),
-        CacheControl: 'max-age=31536000',
-        ContentType: mimeType,
-        ContentLength: result.length,
-      },
-      error => {
-        if (error) {
-          console.error('s3: error:', error);
+    const uploadResult = await s3
+      .upload(
+        {
+          Bucket: bucket,
+          Key: `_cache/${hashKey}`,
+          Body: result,
+          ACL: 'public-read',
+          StorageClass: 'REDUCED_REDUNDANCY',
+          Metadata: {},
+          Expires: new Date('2099-01-01'),
+          CacheControl: 'max-age=31536000',
+          ContentType: mimeType,
+          ContentLength: result.length,
+        },
+        error => {
+          if (error) {
+            console.error('s3: error:', error);
+          }
         }
-      }
-    );
+      )
+      .promise();
+
+    // console.log('uploadResult:', uploadResult);
   };
 
   res.setHeader('Content-Type', mimeType);
@@ -246,6 +250,9 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   res.setHeader('X-Cached-Response', cachedResponse);
 
   res.status(200);
+
+  // console.log('cachedResponse:', cachedResponse);
+  // console.log('response:', response);
 
   if (response instanceof Buffer) {
     if (!response.length) {

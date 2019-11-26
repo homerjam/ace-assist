@@ -12,8 +12,9 @@
   "repository": "https://github.com/homerjam/ace-assist.git",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --expose-gc index.js",
-    "dev": "npm start"
+    "start": "npm run prod",
+    "prod": "forever -c \"node --expose-gc\" index.js",
+    "dev": "nodemon --expose-gc index.js"
   },
   "dependencies": {
     "aws-sdk": "^2.348.0",

@@ -276,6 +276,12 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         -v /tmp/acme:/tmp/acme:rw \
         homerjam/ace-assist
 
+### Google Cloud Run
+
+Build container
+
+    $ gcloud builds submit --tag gcr.io/fokusio/assist --timeout=30m
+
 ### Environment variables
 
     HTTP_PORT
