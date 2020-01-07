@@ -55,7 +55,12 @@
     "send-seekable": "^1.0.4",
     "sharp": "^0.22.1",
     "systeminformation": "^4.9.0",
+    "tus-node-server": "^0.3.2",
     "uuid": "^3.3.2",
     "xxhashjs": "^0.2.2"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.3",
+    "eslint": "^6.8.0"
   }
 }

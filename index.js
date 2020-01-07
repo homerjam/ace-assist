@@ -124,6 +124,7 @@ if (!fs.existsSync(config.tmpDir)) {
 rimrafAsync(path.join(config.tmpDir, '*'));
 
 require('./routes/file')(config);
+require('./routes/uploads')(config);
 require('./routes/transform')(config);
 require('./routes/pdf')(config);
 require('./routes/meta')(config);
