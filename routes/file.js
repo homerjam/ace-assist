@@ -1,17 +1,18 @@
+const _ = require('lodash');
 const path = require('path');
 const Promise = require('bluebird');
 const axios = require('axios');
 const fs = Promise.promisifyAll(require('fs'));
-const multiparty = require('connect-multiparty')();
 const uuid = require('uuid');
 const mime = require('mime');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 const duAsync = Promise.promisify(require('du'));
 const recursive = require('recursive-readdir');
+const tus = require('tus-node-server');
+// const EVENTS = require('tus-node-server').EVENTS;
 const Logger = require('../lib/logger');
 const Image = require('../lib/image');
 const AV = require('../lib/av');
-const Flow = require('../lib/flow');
 const S3 = require('../lib/s3');
 const asyncMiddleware = require('../lib/async-middleware');
 
@@ -24,84 +25,52 @@ module.exports = ({
   endpoint,
   bucket,
 }) => {
-  app.options('/:slug/file/upload?*', (req, res) => {
+  const server = new tus.Server();
+
+  server.datastore = new tus.FileStore({
+    directory: tmpDir,
+    path: '/upload',
+  });
+
+  // server.on(EVENTS.EVENT_UPLOAD_COMPLETE, event => {
+  //   console.log('upload:complete', event.file.id);
+  // });
+
+  app.all('/upload*', authMiddleware, server.handle.bind(server));
+
+  app.options('/:slug/file/process?*', (req, res) => {
     res.status(200);
     res.send();
   });
 
-  app.get('/:slug/file/upload?*', authMiddleware, (req, res) => {
-    const slug = req.params.slug;
-    const flow = new Flow(path.join(tmpDir, slug));
-
-    flow
-      .checkChunk(
-        req.query.flowChunkNumber,
-        req.query.flowChunkSize,
-        req.query.flowTotalChunks,
-        req.query.flowTotalSize,
-        req.query.flowIdentifier,
-        req.query.flowFilename
-      )
-      .then(
-        result => {
-          res.status(200);
-          res.send(result);
-        },
-        error => {
-          res.status(204);
-          res.send(error);
-        }
-      );
-  });
-
   app.post(
-    '/:slug/file/upload?*',
+    '/:slug/file/process?*',
     authMiddleware,
-    multiparty,
     asyncMiddleware(async (req, res) => {
       const slug = req.params.slug;
-      const flow = new Flow(path.join(tmpDir, slug));
 
-      let options = {};
+      const options = _.get(req.body, 'options', {});
 
-      try {
-        options = JSON.parse(req.body.options);
-      } catch (error) {
-        //
-      }
+      const fileName = req.body.fileName;
 
-      const upload = await flow.saveChunk(
-        req.files,
-        req.body.flowChunkNumber,
-        req.body.flowChunkSize,
-        req.body.flowTotalChunks,
-        req.body.flowTotalSize,
-        req.body.flowIdentifier,
-        req.body.flowFilename
-      );
+      const name = uuid.v1();
+      const ext = path
+        .parse(fileName)
+        .ext.toLowerCase()
+        .replace('.', '')
+        .replace('jpeg', 'jpg');
 
-      res.header('Access-Control-Allow-Origin', '*');
+      let tmpFile = path.join(tmpDir, `${name}.${ext}`);
 
-      if (upload.status !== 'complete') {
-        res.status(200);
-        res.send(upload);
-        return;
-      }
-
-      let tmpFile = path.join(tmpDir, slug, upload.filename);
+      await fs.renameSync(path.join(tmpDir, req.body.fileId), tmpFile);
 
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-        const type = path
-          .parse(tmpFile)
-          .ext.toLowerCase()
-          .replace('.', '');
-
         let processResult;
         let metadata = {};
 
-        if (Image.mimeTypes[type]) {
+        if (Image.mimeTypes[ext]) {
           processResult = await Image.process(tmpFile);
           metadata = processResult.metadata;
           tmpFile = processResult.filePath;
@@ -111,25 +80,20 @@ module.exports = ({
           }
         }
 
-        if (AV.mimeTypes[type]) {
+        if (AV.mimeTypes[ext]) {
           processResult = await AV.process(tmpFile);
           metadata = processResult.metadata;
           tmpFile = processResult.filePath;
         }
 
-        const file = path.parse(tmpFile);
-
-        const name = uuid.v1();
-        const ext = file.ext.toLowerCase().replace('jpeg', 'jpg');
-
         const objects = [
           {
             file: tmpFile,
-            key: `${slug}/${name}${ext}`,
+            key: `${slug}/${name}.${ext}`,
           },
         ];
 
-        const extrasPath = path.join(tmpDir, slug, file.name);
+        const extrasPath = path.join(tmpDir, name);
         let extrasFiles = [];
         let extrasSize = 0;
         try {
@@ -156,11 +120,11 @@ module.exports = ({
 
         result.file = {
           name,
-          ext,
+          ext: `.${ext}`,
           size,
         };
         result.original = {
-          fileName: file.base,
+          fileName,
           fileSize: result.fileSize,
           mimeType: result.mimeType,
         };

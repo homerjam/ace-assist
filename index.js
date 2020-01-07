@@ -1,3 +1,4 @@
+const dotenv = require('dotenv');
 const express = require('express');
 const Promise = require('bluebird');
 const fs = require('fs');
@@ -19,6 +20,8 @@ const passwordHash = require('password-hash');
 const greenlock = require('greenlock');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
+
+dotenv.config();
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
 const SSL_DISABLED = process.env.SSL_DISABLED
@@ -100,6 +103,11 @@ app.use((req, res, next) => {
 });
 
 const authMiddleware = (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    next();
+    return;
+  }
+
   passport.authenticate('basic', {
     session: false,
   })(req, res, next);
@@ -124,7 +132,6 @@ if (!fs.existsSync(config.tmpDir)) {
 rimrafAsync(path.join(config.tmpDir, '*'));
 
 require('./routes/file')(config);
-require('./routes/uploads')(config);
 require('./routes/transform')(config);
 require('./routes/pdf')(config);
 require('./routes/meta')(config);
