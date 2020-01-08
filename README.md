@@ -218,10 +218,10 @@ Use these steps to get up and running in development.
         -v ~/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
         -e "HTTP_PORT=8080" \
-        -e "HTTPS_PORT=8081" \
         -e "ENVIRONMENT=development" \
         -e "SSL_DISABLED=true" \
-        -e "EMAIL=email@domain.com" \
+        -e "PACKAGE_AGENT=assist/1" \
+        -e "MAINTAINER_EMAIL=email@domain.com" \
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
@@ -249,14 +249,13 @@ Use these steps to get up and running in development.
 Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the default is 4.
 
     # run container in daemon mode from image and bind ports, volumes with environment variables
-    $ docker run --name ace-assist -d -p 80:HTTP_PORT -p 443:HTTPS_PORT \
+    $ docker run --name ace-assist -d -p 80:80 -p 443:443 \
         -v /var/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
-        -e "HTTP_PORT=8080" \
-        -e "HTTPS_PORT=8081" \
         -e "ENVIRONMENT=production" \
         -e "SSL_DISABLED=false" \
-        -e "EMAIL=email@domain.com" \
+        -e "PACKAGE_AGENT=assist/1" \
+        -e "MAINTAINER_EMAIL=email@domain.com" \
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
         -e "PASSWORD=PASSWORD" \
@@ -270,7 +269,7 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
 
     # using .env file
     $ source .env; docker run --name ace-assist -d \
-        -p 80:$HTTP_PORT -p 443:$HTTPS_PORT \
+        -p 80:80 -p 443:443 \
         --env-file=.env \
         -v /var/assist/tmp:/app/tmp:rw \
         -v /tmp/acme:/tmp/acme:rw \
@@ -284,20 +283,20 @@ Build container
 
 ### Environment variables
 
-    HTTP_PORT
-    HTTPS_PORT
-    ENVIRONMENT
-    SSL_DISABLED
-    EMAIL
-    DOMAINS
-    USERNAME
-    PASSWORD
-    UV_THREADPOOL_SIZE
-    ACCESS_KEY_ID
-    SECRET_ACCESS_KEY
-    ENDPOINT
-    BUCKET
-    CDN
+    HTTP_PORT=8080
+    ENVIRONMENT=production|testing|development
+    SSL_DISABLED=false
+    PACKAGE_AGENT=assist/1
+    MAINTAINER_EMAIL=hello@domin.com
+    DOMAINS=example.com,www.examample.com
+    USERNAME=username
+    PASSWORD=password
+    UV_THREADPOOL_SIZE=128
+    ACCESS_KEY_ID=xxx
+    SECRET_ACCESS_KEY=xxx
+    ENDPOINT=s3.amazonaws.com
+    BUCKET=bucket
+    CDN=cdn.example.com
 
 ### Useful commands
 

@@ -1,8 +1,8 @@
+const dotenv = require('dotenv');
 const express = require('express');
 const Promise = require('bluebird');
 const fs = require('fs');
 const path = require('path');
-const url = require('url');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const compression = require('compression');
@@ -12,22 +12,26 @@ const expires = require('connect-expires');
 const sendSeekable = require('send-seekable');
 const proxy = require('express-http-proxy');
 const http = require('http');
-const https = require('https');
 const passport = require('passport');
 const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
-const greenlock = require('greenlock');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
+const Greenlock = require('greenlock');
+const GreenlockExpress = require('greenlock-express');
+
+dotenv.config();
 
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
 const SSL_DISABLED = process.env.SSL_DISABLED
   ? JSON.parse(process.env.SSL_DISABLED)
   : false;
 const HTTP_PORT = process.env.HTTP_PORT || 8080;
-const HTTPS_PORT = process.env.HTTPS_PORT || 8081;
-const EMAIL = process.env.EMAIL || '';
-const DOMAINS = process.env.DOMAINS || '';
+const MAINTAINER_EMAIL = process.env.MAINTAINER_EMAIL || '';
+const PACKAGE_AGENT = process.env.PACKAGE_AGENT || '';
+const DOMAINS = (process.env.DOMAINS || '')
+  .split(',')
+  .map(domain => domain.trim());
 const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
 const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
@@ -154,72 +158,39 @@ app.use(
   })
 );
 
-const redirectHttps = (req, res, next) => {
-  if (
-    req.connection.encrypted ||
-    req.protocol === 'https' ||
-    req.headers['x-forwarded-proto'] === 'https'
-  ) {
-    next();
-    return;
-  }
-
-  res.writeHead(301, {
-    Location: `https://${req.headers.host}${url.parse(req.url).path}`,
-  });
-  res.end();
-};
-
 if (ENVIRONMENT === 'development') {
   http.createServer(app).listen(HTTP_PORT, () => {
-    console.log(`Express server listening on port ${HTTP_PORT}`);
+    console.log(`http://localhost:${HTTP_PORT}`);
   });
 }
 
 if (SSL_DISABLED && ENVIRONMENT !== 'development') {
-  https.createServer(app).listen(HTTPS_PORT, () => {
-    console.log(`Express server listening on port ${HTTPS_PORT}`);
+  http.createServer(app).listen(HTTP_PORT, () => {
+    console.log(`http://localhost:${HTTP_PORT}`);
   });
 }
 
 if (!SSL_DISABLED && ENVIRONMENT !== 'development') {
-  const debug = ENVIRONMENT === 'testing';
-
-  const lex = greenlock.create({
-    version: 'draft-11',
-    store: require('le-store-certbot').create({
-      webrootPath: '/tmp/acme/var',
-      debug,
-    }),
-    challenges: {
-      'http-01': require('le-challenge-fs').create({
-        webrootPath: '/tmp/acme/var',
-        debug,
-      }),
-      'tls-sni-01': require('le-challenge-sni').create({ debug }),
-      'tls-sni-02': require('le-challenge-sni').create({ debug }),
-    },
-    server: debug ? greenlock.stagingServerUrl : greenlock.productionServerUrl,
-    configDir: '/tmp/acme/etc',
-    email: EMAIL,
-    agreeTos: true,
-    approveDomains: DOMAINS.split(','),
-    app,
-    debug,
-  });
-
-  http
-    .createServer(lex.middleware(redirectHttps))
-    .listen(HTTP_PORT, function createServer() {
-      console.log('Listening for ACME http-01 challenges on', this.address());
+  GreenlockExpress.init(() => {
+    const greenlock = Greenlock.create({
+      packageAgent: PACKAGE_AGENT,
+      maintainerEmail: MAINTAINER_EMAIL,
+      packageRoot: __dirname,
     });
 
-  https
-    .createServer(lex.httpsOptions, lex.middleware(app))
-    .listen(HTTPS_PORT, function createServer() {
-      console.log(
-        'Listening for ACME tls-sni-01 challenges and serve app on',
-        this.address()
-      );
+    greenlock.manager.defaults({
+      subscriberEmail: MAINTAINER_EMAIL,
+      agreeToTerms: true,
     });
+
+    greenlock.sites.add({
+      subject: DOMAINS[0],
+      altnames: DOMAINS,
+    });
+
+    return {
+      greenlock,
+      cluster: false,
+    };
+  }).ready(glx => glx.serveApp(app));
 }
