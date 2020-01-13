@@ -17,7 +17,6 @@ const BasicStrategy = require('passport-http').BasicStrategy;
 const passwordHash = require('password-hash');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 // const consoleStamp = require('console-stamp')(console);
-const Greenlock = require('greenlock');
 const GreenlockExpress = require('greenlock-express');
 
 dotenv.config();
@@ -28,7 +27,6 @@ const SSL_DISABLED = process.env.SSL_DISABLED
   : false;
 const HTTP_PORT = process.env.HTTP_PORT || 8080;
 const MAINTAINER_EMAIL = process.env.MAINTAINER_EMAIL || '';
-const PACKAGE_AGENT = process.env.PACKAGE_AGENT || '';
 const DOMAINS = (process.env.DOMAINS || '')
   .split(',')
   .map(domain => domain.trim());
@@ -171,26 +169,19 @@ if (SSL_DISABLED && ENVIRONMENT !== 'development') {
 }
 
 if (!SSL_DISABLED && ENVIRONMENT !== 'development') {
-  GreenlockExpress.init(() => {
-    const greenlock = Greenlock.create({
-      packageAgent: PACKAGE_AGENT,
-      maintainerEmail: MAINTAINER_EMAIL,
-      packageRoot: __dirname,
-    });
+  const configDir = 'greenlock.d';
+  const sites = [{ subject: DOMAINS[0], altnames: DOMAINS }];
 
-    greenlock.manager.defaults({
-      subscriberEmail: MAINTAINER_EMAIL,
-      agreeToTerms: true,
-    });
+  fs.mkdirSync(path.join(__dirname, configDir), { recursive: true });
+  fs.writeFileSync(
+    path.join(__dirname, configDir, 'config.json'),
+    JSON.stringify({ sites })
+  );
 
-    greenlock.sites.add({
-      subject: DOMAINS[0],
-      altnames: DOMAINS,
-    });
-
-    return {
-      greenlock,
-      cluster: false,
-    };
-  }).ready(glx => glx.serveApp(app));
+  GreenlockExpress.init({
+    packageRoot: __dirname,
+    configDir,
+    maintainerEmail: MAINTAINER_EMAIL,
+    cluster: false,
+  }).serve(app);
 }
