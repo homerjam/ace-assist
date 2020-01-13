@@ -19,6 +19,7 @@ const getUrls = async fonts => {
           ).data;
           resolve();
         } catch (error) {
+          console.error(error);
           reject(error);
         }
       })
@@ -53,16 +54,31 @@ const addItem = async (config, doc, obj, item, pi) => {
 
     const url = `http://${config.bucket}.${config.endpoint}/${imagePath}`;
 
-    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    let response;
 
-    const buffer = await sharp(response.data)
-      .max()
-      .resize(1500, 1000)
-      .jpeg({
-        quality: 80,
-      })
-      .withMetadata()
-      .toBuffer();
+    try {
+      response = await axios.get(url, { responseType: 'arraybuffer' });
+    } catch (error) {
+      console.error(error);
+    }
+
+    let buffer;
+
+    try {
+      buffer = await sharp(response.data)
+        .resize({
+          width: 1500,
+          height: 1000,
+          fit: 'contain',
+        })
+        .jpeg({
+          quality: 80,
+        })
+        .withMetadata()
+        .toBuffer();
+    } catch (error) {
+      console.error(error);
+    }
 
     args[0] = buffer;
 

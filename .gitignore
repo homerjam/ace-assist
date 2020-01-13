@@ -9,5 +9,7 @@ cache
 tmp
 tests
 typings
+.greenlockrc
+greenlock.d
 package-lock.json
 yarn.lock
