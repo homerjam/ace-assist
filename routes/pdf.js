@@ -69,7 +69,6 @@ const addItem = async (config, doc, obj, item, pi) => {
         .resize({
           width: 1500,
           height: 1000,
-          fit: 'contain',
         })
         .jpeg({
           quality: 80,
