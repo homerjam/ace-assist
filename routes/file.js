@@ -58,7 +58,8 @@ module.exports = ({
         .parse(fileName)
         .ext.toLowerCase()
         .replace('.', '')
-        .replace('jpeg', 'jpg');
+        .replace('jpeg', 'jpg')
+        .replace('mpeg', 'mpg');
 
       let tmpFile = path.join(tmpDir, `${name}.${ext}`);
 

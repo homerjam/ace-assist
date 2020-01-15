@@ -220,7 +220,6 @@ Use these steps to get up and running in development.
         -e "HTTP_PORT=8080" \
         -e "ENVIRONMENT=development" \
         -e "SSL_DISABLED=true" \
-        -e "PACKAGE_AGENT=assist/1" \
         -e "MAINTAINER_EMAIL=email@domain.com" \
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
@@ -254,7 +253,6 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
         -v /tmp/acme:/tmp/acme:rw \
         -e "ENVIRONMENT=production" \
         -e "SSL_DISABLED=false" \
-        -e "PACKAGE_AGENT=assist/1" \
         -e "MAINTAINER_EMAIL=email@domain.com" \
         -e "DOMAINS=example.com,example2.com" \
         -e "USERNAME=USERNAME" \
@@ -279,14 +277,13 @@ Note: Increase the `UV_THREADPOOL_SIZE` to improve file read performance, the de
 
 Build container
 
-    $ gcloud builds submit --tag gcr.io/fokusio/assist --timeout=30m
+    $ gcloud builds submit --tag gcr.io/fokusio/assist --timeout=30m .
 
 ### Environment variables
 
     HTTP_PORT=8080
     ENVIRONMENT=production|testing|development
     SSL_DISABLED=false
-    PACKAGE_AGENT=assist/1
     MAINTAINER_EMAIL=hello@domin.com
     DOMAINS=example.com,www.examample.com
     USERNAME=username
