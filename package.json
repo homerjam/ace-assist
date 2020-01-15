@@ -13,8 +13,8 @@
   "main": "index.js",
   "scripts": {
     "start": "npm run prod",
-    "prod": "forever -c \"node --expose-gc\" index.js",
-    "dev": "nodemon --expose-gc index.js"
+    "prod": "forever -c \"node --expose-gc\" src/index.js",
+    "dev": "nodemon --expose-gc src/index.js"
   },
   "dependencies": {
     "aws-sdk": "^2.601.0",

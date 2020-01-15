@@ -117,8 +117,8 @@ const authMiddleware = (req, res, next) => {
 const config = {
   app,
   authMiddleware,
-  logDir: path.join(__dirname, 'log'),
-  tmpDir: path.join(__dirname, 'tmp'),
+  logDir: path.join(__dirname, '../log'),
+  tmpDir: path.join(__dirname, '../tmp'),
   accessKeyId: ACCESS_KEY_ID,
   secretAccessKey: SECRET_ACCESS_KEY,
   endpoint: ENDPOINT,

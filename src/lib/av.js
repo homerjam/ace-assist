@@ -47,9 +47,9 @@ module.exports = class AV {
 
   static get placeholders() {
     return {
-      audio: path.join(__dirname, '../assets/encoding.mp4'),
-      image: path.join(__dirname, '../assets/encoding.mp4'),
-      video: path.join(__dirname, '../assets/encoding.mp4'),
+      audio: path.join(__dirname, '../../assets/encoding.mp4'),
+      image: path.join(__dirname, '../../assets/encoding.mp4'),
+      video: path.join(__dirname, '../../assets/encoding.mp4'),
     };
   }
 

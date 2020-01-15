@@ -1,1 +1,1 @@
-web: forever -c "node --expose-gc" index.js
+web: forever -c "node --expose-gc" src/index.js

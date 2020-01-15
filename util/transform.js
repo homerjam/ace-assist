@@ -1,4 +1,4 @@
-const AV = require('../lib/av');
+const AV = require('../src/lib/av');
 
 const run = async (filePath, hashKey, settings) => {
   console.time('transform');
