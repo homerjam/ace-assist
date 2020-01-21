@@ -20,7 +20,7 @@ ENV FFMPEG_VERSION=4.1.3
 RUN apt-get update; apt-get upgrade -y; apt-get clean
 
 # Install common dependencies
-RUN apt-get update && apt-get install -y --fix-missing autoconf automake build-essential cmake pkg-config software-properties-common texinfo sudo wget curl git supervisor
+RUN apt-get update && apt-get install -y --fix-missing autoconf automake build-essential cmake pkg-config software-properties-common texinfo sudo wget curl git supervisor inotify-tools
 
 # Install nodejs
 RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
@@ -41,7 +41,7 @@ RUN add-apt-repository multiverse && apt-get update && apt-get install -y libass
 
 # Add supervisor configuration
 RUN mkdir -p /var/log/supervisor
-ADD conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create app directory and change working directory into it
 RUN mkdir -p /app
