@@ -12,6 +12,7 @@ const asyncMiddleware = require('../lib/async-middleware');
 
 const MIN_AVAIL_MEM = 1024 * 1024 * 500; // 500 megabytes
 const HASH_SEED = 0xabcd;
+const CACHE = true;
 
 let s3;
 
@@ -160,28 +161,30 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   let cachedResponse = false;
   let time = process.hrtime();
 
-  try {
-    const object = await s3
-      .headObject({
-        Bucket: bucket,
-        Key: `_cache/${hashKey}`,
-      })
-      .promise();
-
-    if (cdn && !req.headers.origin) {
-      response = { redirect: `${cdn}/_cache/${hashKey}`, object };
-    } else {
-      response = s3
-        .getObject({
+  if (CACHE) {
+    try {
+      const object = await s3
+        .headObject({
           Bucket: bucket,
           Key: `_cache/${hashKey}`,
         })
-        .createReadStream();
-      response.length = object.ContentLength;
-    }
-  } catch (error) {
-    if (!/(NotFound|NoSuchKey)/.test(error.code)) {
-      console.error('Error:', error);
+        .promise();
+
+      if (cdn && !req.headers.origin) {
+        response = { redirect: `${cdn}/_cache/${hashKey}`, object };
+      } else {
+        response = s3
+          .getObject({
+            Bucket: bucket,
+            Key: `_cache/${hashKey}`,
+          })
+          .createReadStream();
+        response.length = object.ContentLength;
+      }
+    } catch (error) {
+      if (!/(NotFound|NoSuchKey)/.test(error.code)) {
+        console.error('Error:', error);
+      }
     }
   }
 
