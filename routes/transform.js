@@ -234,6 +234,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
           CacheControl: 'max-age=31536000',
           ContentType: mimeType,
           ContentLength: result.length,
+          Tagging: 'slug=' + settings.slug,
         },
         error => {
           if (error) {
