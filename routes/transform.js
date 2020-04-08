@@ -16,11 +16,11 @@ const CACHE = true;
 
 let s3;
 
-const hash = key => XXH.h64(key, HASH_SEED).toString(16);
+const hash = (key) => XXH.h64(key, HASH_SEED).toString(16);
 
 const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   try {
-    si.mem(mem => {
+    si.mem((mem) => {
       if (mem.available < MIN_AVAIL_MEM) {
         global.gc();
       }
@@ -65,14 +65,14 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
     settings = {};
     options = options.split(/,|;/);
 
-    options = options.filter(option => /_|:/.test(option));
+    options = options.filter((option) => /_|:/.test(option));
 
     if (options.length === 0) {
       Logger.error(res, req.url, 'invalid options');
       return;
     }
 
-    options.forEach(option => {
+    options.forEach((option) => {
       const optionParts = option.split(/_|:/);
       const key = optionParts[0].toLowerCase();
       const value = optionParts.slice(1).join(':');
@@ -109,30 +109,21 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
     if (querySettings) {
       file = req.params[0];
     } else {
-      file = req.params[0]
-        .split('/')
-        .slice(1)
-        .join('/');
+      file = req.params[0].split('/').slice(1).join('/');
       const qs = req.originalUrl.split('?')[1];
       if (qs) {
         file = `${file}?${qs}`;
       }
     }
 
-    settings.outputFormat = req.params[0]
-      .split('.')
-      .slice(-1)[0]
-      .toLowerCase();
+    settings.outputFormat = req.params[0].split('.').slice(-1)[0].toLowerCase();
   }
 
   if (settings.f) {
     settings.outputFormat = settings.f;
   }
 
-  settings.inputFormat = file
-    .split('.')
-    .slice(-1)[0]
-    .toLowerCase();
+  settings.inputFormat = file.split('.').slice(-1)[0].toLowerCase();
 
   const logPrefix = `${req.originalUrl} ${JSON.stringify(settings)}`;
   // const logInfo = Logger.info.bind(null, null, logPrefix);
@@ -208,14 +199,15 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   }
 
   time = process.hrtime(time);
-  time = `${(time[0] === 0 ? '' : time[0]) +
-    (time[1] / 1000 / 1000).toFixed(2)}ms`;
+  time = `${
+    (time[0] === 0 ? '' : time[0]) + (time[1] / 1000 / 1000).toFixed(2)
+  }ms`;
 
   const mimeType =
     Image.mimeTypes[settings.outputFormat] ||
     AV.mimeTypes[settings.outputFormat];
 
-  const storeResult = async result => {
+  const storeResult = async (result) => {
     if (!result.length) {
       console.error('buffer: error:', url);
       return;
@@ -236,7 +228,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
           ContentLength: result.length,
           Tagging: 'slug=' + settings.slug,
         },
-        error => {
+        (error) => {
           if (error) {
             console.error('s3: error:', error);
           }
@@ -244,7 +236,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
       )
       .promise();
 
-    // console.log('uploadResult:', uploadResult);
+    console.log('uploadResult:', uploadResult);
   };
 
   res.setHeader('Content-Type', mimeType);
@@ -277,7 +269,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   }
 
   if (response.redirect) {
-    res.redirect(302, response.redirect);
+    res.redirect(301, response.redirect);
     return;
   }
 
@@ -315,7 +307,7 @@ const transformHandler = async ({ endpoint, bucket, cdn }, req, res) => {
   }
 
   if (response.promise) {
-    response.promise.then(buffer => {
+    response.promise.then((buffer) => {
       storeResult(buffer);
 
       if (!settings.ph) {
