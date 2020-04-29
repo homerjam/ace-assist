@@ -207,9 +207,9 @@ class Image {
         settings.h *= height / 100;
       }
 
-      let fit;
+      let fit = 'inside';
 
-      if (!(settings.sm && /fill|cover/i.test(settings.sm)) || settings.g) {
+      if ((settings.sm && /fill|cover/i.test(settings.sm)) || settings.g) {
         fit = 'cover';
       }
 
