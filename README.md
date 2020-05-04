@@ -185,6 +185,7 @@ Accepts a POST request with a JSON `payload` in the request body. Uses [PDFkit](
     # ffmpeg
     $ brew tap homebrew-ffmpeg/ffmpeg
     $ brew options homebrew-ffmpeg/ffmpeg/ffmpeg
+    $ brew install libvpx
     $ brew install homebrew-ffmpeg/ffmpeg/ffmpeg --with-openh264 --with-webp --with-fdk-aac --HEAD
 
 ### Usage (development)

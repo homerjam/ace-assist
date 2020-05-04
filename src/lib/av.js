@@ -3,7 +3,7 @@ const Promise = require('bluebird');
 const path = require('path');
 const axios = require('axios');
 // const stream = require('stream');
-const fs = Promise.promisifyAll(require('fs'));
+const fs = require('fs').promises;
 const ffmpeg = Promise.promisifyAll(require('fluent-ffmpeg'));
 const hbjs = require('handbrake-js');
 // const Logger = require('./logger');
@@ -57,7 +57,7 @@ module.exports = class AV {
     let metadata = await ffmpeg.ffprobeAsync(filePath);
 
     const videoStream = metadata.streams.filter(
-      stream => stream.codec_type === 'video'
+      (stream) => stream.codec_type === 'video'
     )[0];
 
     if (videoStream) {
@@ -86,7 +86,7 @@ module.exports = class AV {
         // .on('filenames', (filenames) => {
         //   console.log(`Video.thumbnail: ${filenames.join(', ')}`);
         // })
-        .on('start', cmd => {
+        .on('start', (cmd) => {
           console.log('AV.thumbnail: start:', cmd);
         })
         .on('end', resolve)
@@ -100,18 +100,20 @@ module.exports = class AV {
   }
 
   static async transform(filePathOrUrl, settings, hashKey) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       let command;
       // let passThroughStream;
 
+      const tmpDir = path.join(__dirname, '../tmp');
+
       const outputFile = path.join(
-        __dirname,
-        '../tmp',
+        tmpDir,
         `${hashKey}.out.${settings.outputFormat}`
       );
+
       const type = AV.mimeTypes[settings.outputFormat].split('/')[0];
 
-      // if (fs.existsSync(outputFile)) {
+      // if (await fs.exists(outputFile)) {
       //   resolve({
       //     placeholder: AV.placeholders[type],
       //   });
@@ -120,29 +122,29 @@ module.exports = class AV {
 
       // eslint-disable-next-line
       const promise = new Promise(async (resolve, reject) => {
-        let inputFile;
         const outputOptions = [];
 
-        fs.writeFileSync(outputFile, '');
+        await fs.mkdir(tmpDir, { recursive: true });
+
+        await fs.writeFile(outputFile, '');
 
         let input;
-
         if (/https?:/.test(filePathOrUrl)) {
           // input = (await axios.get(filePathOrUrl, { responseType: settings.inputFormat === 'gif' ? 'arraybuffer' : 'stream' })).data;
           input = (
             await axios.get(filePathOrUrl, { responseType: 'arraybuffer' })
           ).data;
         } else {
-          input = await fs.readFileAsync(filePathOrUrl);
+          input = await fs.readFile(filePathOrUrl);
         }
 
+        let inputFile;
         if (input instanceof Buffer) {
           inputFile = path.join(
-            __dirname,
-            '../tmp',
+            tmpDir,
             `${hashKey}.in.${settings.inputFormat}`
           );
-          await fs.writeFileAsync(inputFile, input);
+          await fs.writeFile(inputFile, input);
         }
 
         command = ffmpeg(inputFile || input);
@@ -243,7 +245,7 @@ module.exports = class AV {
           ].concat(outputOptions)
         );
 
-        command.on('start', cmd => {
+        command.on('start', (cmd) => {
           console.log('AV.transform: start:', cmd);
         });
         // .on('progress', progress => {
@@ -253,15 +255,15 @@ module.exports = class AV {
         command
           .on('end', async (stdout, stderr) => {
             try {
-              const buffer = await fs.readFileAsync(outputFile);
+              const buffer = await fs.readFile(outputFile);
 
               try {
-                // await fs.unlinkAsync(outputFile);
+                // await fs.unlink(outputFile);
               } catch (error) {
                 //
               }
               try {
-                // await fs.unlinkAsync(inputFile);
+                // await fs.unlink(inputFile);
               } catch (error) {
                 //
               }
@@ -289,14 +291,14 @@ module.exports = class AV {
               reject(error);
             }
           })
-          .on('error', async error => {
+          .on('error', async (error) => {
             try {
-              // await fs.unlinkAsync(outputFile);
+              // await fs.unlink(outputFile);
             } catch (error) {
               //
             }
             try {
-              // await fs.unlinkAsync(inputFile);
+              // await fs.unlink(inputFile);
             } catch (error) {
               //
             }
@@ -338,8 +340,8 @@ module.exports = class AV {
         // })
         .on('complete', async () => {
           try {
-            // await fs.unlinkAsync(inputFile);
-            await fs.renameAsync(tmpFile, outputFile);
+            // await fs.unlink(inputFile);
+            await fs.rename(tmpFile, outputFile);
           } catch (error) {
             reject(error);
             return;
@@ -347,14 +349,14 @@ module.exports = class AV {
 
           resolve(outputFile);
         })
-        .on('error', async error => {
+        .on('error', async (error) => {
           try {
-            // await fs.unlinkAsync(tmpFile);
+            // await fs.unlink(tmpFile);
           } catch (error) {
             //
           }
           try {
-            // await fs.unlinkAsync(inputFile);
+            // await fs.unlink(inputFile);
           } catch (error) {
             //
           }
