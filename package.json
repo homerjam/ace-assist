@@ -14,7 +14,8 @@
   "scripts": {
     "start": "npm run prod",
     "prod": "forever -c \"node --expose-gc\" src/index.js",
-    "dev": "nodemon --expose-gc src/index.js"
+    "dev": "nodemon --expose-gc src/index.js",
+    "dev:inspect": "nodemon --inspect --expose-gc src/index.js"
   },
   "dependencies": {
     "aws-sdk": "^2.601.0",

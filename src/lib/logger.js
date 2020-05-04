@@ -1,6 +1,6 @@
 const dateFormat = require('dateformat');
 
-const stamp = type =>
+const stamp = (type) =>
   `[${dateFormat(new Date(), 'ddd mmm dd yyyy HH:MM:ss')}] [${type}]\t`;
 
 class Logger {

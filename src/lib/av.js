@@ -63,7 +63,10 @@ module.exports = class AV {
     if (videoStream) {
       if (
         !_.isNumber(metadata.format.duration) &&
-        metadata.format.format_name !== 'gif'
+        ![
+          metadata.format.format_name,
+          metadata.format.filename.split('.').pop().toLowerCase(),
+        ].includes('gif')
       ) {
         filePath = await AV.fix(filePath);
         metadata = await ffmpeg.ffprobeAsync(filePath);
@@ -100,11 +103,11 @@ module.exports = class AV {
   }
 
   static async transform(filePathOrUrl, settings, hashKey) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let command;
       // let passThroughStream;
 
-      const tmpDir = path.join(__dirname, '../tmp');
+      const tmpDir = path.join(__dirname, '../../tmp');
 
       const outputFile = path.join(
         tmpDir,
@@ -121,7 +124,7 @@ module.exports = class AV {
       // }
 
       // eslint-disable-next-line
-      const promise = new Promise(async (resolve, reject) => {
+      const promise = new Promise(async (resolve) => {
         const outputOptions = [];
 
         await fs.mkdir(tmpDir, { recursive: true });
@@ -130,10 +133,15 @@ module.exports = class AV {
 
         let input;
         if (/https?:/.test(filePathOrUrl)) {
-          // input = (await axios.get(filePathOrUrl, { responseType: settings.inputFormat === 'gif' ? 'arraybuffer' : 'stream' })).data;
-          input = (
-            await axios.get(filePathOrUrl, { responseType: 'arraybuffer' })
-          ).data;
+          try {
+            // input = (await axios.get(filePathOrUrl, { responseType: settings.inputFormat === 'gif' ? 'arraybuffer' : 'stream' })).data;
+            input = (
+              await axios.get(filePathOrUrl, { responseType: 'arraybuffer' })
+            ).data;
+          } catch (error) {
+            reject(error);
+            return;
+          }
         } else {
           input = await fs.readFile(filePathOrUrl);
         }
@@ -258,12 +266,12 @@ module.exports = class AV {
               const buffer = await fs.readFile(outputFile);
 
               try {
-                // await fs.unlink(outputFile);
+                await fs.unlink(outputFile);
               } catch (error) {
                 //
               }
               try {
-                // await fs.unlink(inputFile);
+                await fs.unlink(inputFile);
               } catch (error) {
                 //
               }
@@ -330,7 +338,7 @@ module.exports = class AV {
         .spawn({
           input: inputFile,
           output: tmpFile,
-          preset: 'Normal',
+          preset: 'Vimeo YouTube HQ 2160p60 4K',
         })
         // .on('output', output => {
         //   console.log('AV.fix: output:', output);
