@@ -31,7 +31,7 @@ const HTTP_PORT = process.env.HTTP_PORT || 8080;
 const MAINTAINER_EMAIL = process.env.MAINTAINER_EMAIL || '';
 const DOMAINS = (process.env.DOMAINS || '')
   .split(',')
-  .map(domain => domain.trim());
+  .map((domain) => domain.trim());
 const USERNAME = process.env.USERNAME || 'username';
 const PASSWORD = process.env.PASSWORD || 'password';
 const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
@@ -40,7 +40,7 @@ const ENDPOINT = process.env.ENDPOINT;
 const BUCKET = process.env.BUCKET;
 const CDN = process.env.CDN;
 
-process.on('unhandledRejection', result =>
+process.on('unhandledRejection', (result) =>
   console.error('unhandledRejection:', result)
 );
 
@@ -132,6 +132,7 @@ if (!fs.existsSync(config.tmpDir)) {
 
 rimrafAsync(path.join(config.tmpDir, '*'));
 
+require('./routes/upload')(config);
 require('./routes/file')(config);
 require('./routes/transform')(config);
 require('./routes/pdf')(config);

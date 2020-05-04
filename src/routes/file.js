@@ -8,8 +8,6 @@ const mime = require('mime');
 const rimrafAsync = Promise.promisify(require('rimraf'));
 const duAsync = Promise.promisify(require('du'));
 const recursive = require('recursive-readdir');
-const tus = require('tus-node-server');
-// const EVENTS = require('tus-node-server').EVENTS;
 const Logger = require('../lib/logger');
 const Image = require('../lib/image');
 const AV = require('../lib/av');
@@ -25,19 +23,6 @@ module.exports = ({
   endpoint,
   bucket,
 }) => {
-  const server = new tus.Server();
-
-  server.datastore = new tus.FileStore({
-    directory: tmpDir,
-    path: '/upload',
-  });
-
-  // server.on(EVENTS.EVENT_UPLOAD_COMPLETE, event => {
-  //   console.log('upload:complete', event.file.id);
-  // });
-
-  app.all('/upload*', authMiddleware, server.handle.bind(server));
-
   app.options('/:slug/file/process?*', (req, res) => {
     res.status(200);
     res.send();
@@ -104,7 +89,7 @@ module.exports = ({
           //
         }
 
-        extrasFiles.forEach(file => {
+        extrasFiles.forEach((file) => {
           objects.push({
             file,
             key: `${slug}/${name}${file.replace(extrasPath, '')}`,
@@ -112,7 +97,7 @@ module.exports = ({
         });
 
         const results = await Promise.all(
-          objects.map(object => s3.upload(object.file, object.key))
+          objects.map((object) => s3.upload(object.file, object.key))
         );
 
         const result = results[0];
@@ -133,7 +118,7 @@ module.exports = ({
 
         await Promise.all(
           objects
-            .map(object => fs.unlinkAsync(object.file))
+            .map((object) => fs.unlinkAsync(object.file))
             .concat(rimrafAsync(extrasPath))
         );
 
@@ -161,14 +146,14 @@ module.exports = ({
       try {
         const s3 = new S3(accessKeyId, secretAccessKey, bucket);
 
-        fileNames = fileNames.filter(fileName => fileName);
-        fileNames = fileNames.map(fileName => fileName.split('.')[0]);
+        fileNames = fileNames.filter((fileName) => fileName);
+        fileNames = fileNames.map((fileName) => fileName.split('.')[0]);
 
         const originalFilePrefixes = fileNames.map(
-          fileName => `${slug}/${fileName}.`
+          (fileName) => `${slug}/${fileName}.`
         );
         const extraFilePrefixes = fileNames.map(
-          fileName => `${slug}/${fileName}/`
+          (fileName) => `${slug}/${fileName}/`
         );
 
         const prefixes = originalFilePrefixes.concat(extraFilePrefixes);
